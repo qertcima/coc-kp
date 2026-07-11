@@ -1004,6 +1004,7 @@ function showInvestigatorSelect(scenarioId) {
 }
 
 function deleteInv(invId) {
+  if (!invId || invId === 'undefined') { console.error('deleteInv: 无效ID', invId); return; }
   if (!confirm('确定删除这个调查员？相关对话也会被清理。')) return;
   state.investigators = state.investigators.filter(i => i.id !== invId);
   // 清理该调查员相关的所有对话
@@ -1014,9 +1015,33 @@ function deleteInv(invId) {
   }
   autoSave();
   showToast('🗑 已删除');
-  // 重新渲染当前页面
+  // 强制重新渲染：先清空再重新显示
+  const detail = document.getElementById('home-detail');
+  if (detail) detail.innerHTML = '';
+  // 根据当前上下文决定显示哪一阶段
   if (state.currentScenarioId) showInvestigatorSelect(state.currentScenarioId);
   else showInvestigatorSelect();
+  // 如果是空列表，强制再调用一次确保更新
+  if (state.investigators.length === 0 && detail) {
+    detail.innerHTML = `
+      <div class="detail-panel">
+        <h3>调查员档案</h3>
+        <div class="empty-tip">还没有调查员，请先创建</div>
+        <div class="inv-create-bar">
+          <button class="ipc-create-card quick" onclick="openQuickCreate()">
+            <div class="ipc-icon">⚡</div>
+            <div class="ipc-name">智能建卡</div>
+            <div class="ipc-desc">填几个基础信息自动生成</div>
+          </button>
+          <button class="ipc-create-card detailed" onclick="openCharCreate()">
+            <div class="ipc-icon">🎭</div>
+            <div class="ipc-name">详细建卡</div>
+            <div class="ipc-desc">5标签完整自定义</div>
+          </button>
+        </div>
+      </div>
+    `;
+  }
 }
 
 function confirmPickInv(invId) {
@@ -1097,10 +1122,13 @@ function continueSession(sessId) {
 }
 
 function deleteSession(sessId) {
+  if (!sessId || sessId === 'undefined') return;
   if (!confirm('删除这条对话记录？')) return;
   state.sessions = state.sessions.filter(s => s.id !== sessId);
   if (state.currentSessionId === sessId) state.currentSessionId = null;
   autoSave();
+  showToast('🗑 已删除');
+  // 强制重新渲染整个过往对话列表
   showSessionList();
 }
 
