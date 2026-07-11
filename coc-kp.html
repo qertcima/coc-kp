@@ -820,7 +820,14 @@ const SCENARIOS = [
     skills: '侦查·急救·话术·潜行',
     bg: '2013年，你加班后搭上末班电车沉沉睡去。醒来时乘客全部消失，窗外一片漆黑，电车仍在飞驰——车门上贴着一张字条：「只管前进吧，已经没有退路了」。',
     objective: '在车厢间前进探索 → 找到车头驾驶室 → 拉下紧急制动闸逃出生天。注意：在你身后，有什么东西正在一节一节地吞噬车厢……',
-    icon: '🚃'
+    icon: '🚃',
+    // 该台本的预设角色（智能建卡留空时自动召唤契合本模组剧情的角色）
+    presets: [{
+      id: 'limai',
+      name: '黎麦',
+      desc: '在日中国留学生·兵击短棍练习者',
+      createFn: 'createLimaiChar'
+    }]
   }
 ];
 
@@ -1618,20 +1625,27 @@ function createLimaiChar() {
   autoSave();
   addMsg('system', `🎭 调查员「黎麦」已就位！`, 'system');
   addMsg('system', `📊 属性总评: ${Object.values(charData.attrs).reduce((a,b)=>a+b)}点 | HP:${hp} SAN:${sanVal} DB:${db} | 2013·东京`, 'system');
-  addMsg('kp', `<i>${charData.bg}</i>`);
   addMsg('tip', `黎麦今晚刚从居合道训练回来，伸缩短棍在背包侧袋里，随取随用。手机是iPhone 5——2013年款，没有信号。`, '角色导入');
-  showToast('✅ 黎麦已就位！点击「开始冒险」或输入「准备好了」');
-  showReadyScreen();
+  showToast('✅ 黎麦已就位！');
+  // 注意：不主动跳转到主页/台本选择 — 由调用方根据当前上下文决定下一步
+  // （主页时调用方应调 showReadyScreen() 进入台本选择；
+  //   游戏中调用方应保持当前剧情，仅作为档案新增）
 }
 
 /* ========== 智能快速建卡 ========== */
 function openQuickCreate() {
   const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'quick-char-modal';
+  // 动态提示：根据当前台本显示对应预设（如果有的话）
+  const currentScen = SCENARIOS.find(s => s.id === state.currentScenarioId);
+  const preset = currentScen && currentScen.presets && currentScen.presets[0];
+  const hintText = preset
+    ? `💡 留空不填 → 一键召唤「${currentScen.name}」台本预设角色「${preset.name}」（${preset.desc}）`
+    : '💡 留空不填 → 系统将按推荐设定自动生成';
   overlay.innerHTML = `
     <div class="modal" style="width:520px">
       <h3>⚡ 智能建卡</h3>
       <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">填几个基本信息，系统自动生成完整角色卡</p>
-      <p style="font-size:10px;color:var(--eldritch-teal);margin-top:-6px;margin-bottom:10px;opacity:0.8">💡 留空不填 → 一键召唤预设角色「黎麦」（在日中国留学生·短棍格斗）</p>
+      <p id="qc-preset-hint" style="font-size:10px;color:var(--eldritch-teal);margin-top:-6px;margin-bottom:10px;opacity:0.8">${hintText}</p>
       <div class="char-form" style="display:flex;flex-direction:column;gap:8px">
         <div class="row"><div style="flex:2"><label style="font-size:10px;color:var(--text-muted)">角色名</label><input id="qc-name" placeholder="如：黎麦"></div>
         <div style="flex:1"><label style="font-size:10px;color:var(--text-muted)">年龄</label><input id="qc-age" placeholder="如：19" type="number"></div>
@@ -1664,7 +1678,8 @@ function quickGenerateChar() {
   const bg = document.getElementById('qc-background').value.trim();
   const gearStr = document.getElementById('qc-gear').value.trim();
 
-  // 留空快捷通道：所有字段全空时直接召唤黎麦预设
+  // 留空快捷通道：所有字段全空时直接召唤当前台本的预设角色
+  // 关键：必须根据玩家当前所在台本选对应预设，不能硬编码
   const rawName = document.getElementById('qc-name').value.trim();
   const rawAge = document.getElementById('qc-age').value.trim();
   const isAllEmpty = !rawName && !rawAge && !appearance && !bg && !gearStr;
@@ -1672,8 +1687,28 @@ function quickGenerateChar() {
     // 关闭弹窗
     const modal = document.getElementById('quick-char-modal');
     if (modal) modal.remove();
-    showToast('⚡ 检测到留空，正在召唤「黎麦」...');
-    setTimeout(() => createLimaiChar(), 200);
+
+    // 找到当前台本的第一个预设（契合当前剧情）
+    const currentScen = SCENARIOS.find(s => s.id === state.currentScenarioId);
+    const preset = currentScen && currentScen.presets && currentScen.presets[0];
+
+    if (preset && typeof window[preset.createFn] === 'function') {
+      // 根据玩家当前所在场景决定下一步（不能强制跳出当前剧情！）
+      const isInGame = state.currentView === 'play' && state.currentSessionId;
+      showToast(`⚡ 召唤「${preset.name}」...`);
+      window[preset.createFn]();
+      if (isInGame) {
+        // 情况：玩家正在跑某个模组 → 新档案加入档案库，不切换当前剧情
+        addMsg('system', `📂 「${preset.name}」已加入调查员档案库（${preset.desc}）。当前剧情继续。`, 'system');
+      } else {
+        // 情况：玩家在主页/未开始游戏 → 走台本选择流程
+        showReadyScreen();
+      }
+    } else {
+      // 兜底：当前台本无预设 → 走普通智能生成
+      showToast('⚡ 当前台本无预设，继续生成自定义角色...');
+      // 留空走后续生成流程
+    }
     return;
   }
 
