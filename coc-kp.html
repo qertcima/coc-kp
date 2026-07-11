@@ -831,6 +831,18 @@ const SCENARIOS = [
   }
 ];
 
+// ==================== 工具函数 ====================
+// 关键修复#10：HTML escape 工具 — 防 XSS
+function escapeHTML(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 let state = {
   // ============= 跨模组持久化 =============
   investigators: [],         // 全部调查员档案: [{id, name, ...}, ...]
@@ -911,10 +923,37 @@ function init() {
     document.getElementById('play-area').style.display = 'none';
     document.getElementById('left-panel').style.display = 'none';
   } else {
-    // 恢复上次会话
-    document.getElementById('home-area').style.display = 'none';
-    document.getElementById('play-area').style.display = 'flex';
-    document.getElementById('left-panel').style.display = '';
+    // 恢复上次会话 — 但要先校验 investigator 和 sceneData 是否完整（防御性）
+    if (!state.investigator || !state.investigator.id) {
+      console.warn('[init] 恢复play视图时 investigator 缺失，回退到主页');
+      state.currentView = 'home';
+      state.currentSessionId = null;
+      document.getElementById('home-area').style.display = '';
+      document.getElementById('play-area').style.display = 'none';
+      document.getElementById('left-panel').style.display = 'none';
+    } else if (!state.sceneData || !state.sceneData.plotLock) {
+      // 旧存档可能缺 sceneData 字段，尝试从对应 session 补
+      const sess = state.sessions.find(s => s.id === state.currentSessionId);
+      if (sess && sess.sceneData) {
+        state.sceneData = JSON.parse(JSON.stringify(sess.sceneData));
+      } else {
+        console.warn('[init] 旧存档 sceneData 缺字段，重置');
+        state.sceneData = {
+          currentCar: 1, conductorAwake: false, hasKey: false,
+          hasCrowbar: false, hasFlashlight: false,
+          warningsTriggered: [], monsterDistance: 8,
+          plotLock: ['conductor_helper', 'key_location', 'finale_brake'],
+          plotEvents: []
+        };
+      }
+      document.getElementById('home-area').style.display = 'none';
+      document.getElementById('play-area').style.display = 'flex';
+      document.getElementById('left-panel').style.display = '';
+    } else {
+      document.getElementById('home-area').style.display = 'none';
+      document.getElementById('play-area').style.display = 'flex';
+      document.getElementById('left-panel').style.display = '';
+    }
   }
   renderHome();
 }
@@ -1089,11 +1128,13 @@ function confirmPickInv(invId) {
   state.sessions.push(session);
   // 调查员复制到当前实例
   state.investigator = JSON.parse(JSON.stringify(inv));
-  state.investigatorId = invId;
   state.currentSessionId = session.id;
   state.gamePhase = 'idle';
   state.tutorialStep = 0;
   state.tutorialDone = false;
+  // 关键修复#1：新会话的 sceneData 必须同步到 state（runChangAn 读 state.sceneData）
+  state.sceneData = JSON.parse(JSON.stringify(session.sceneData));
+  // 关键修复#7：state.investigatorId 字段已删除（冗余且 goHome/deleteInv 不清）— 用 state.investigator.id
   enterPlay();
 }
 
@@ -1134,14 +1175,28 @@ function continueSession(sessId) {
   if (!sess) return;
   const inv = state.investigators.find(i => i.id === sess.investigatorId);
   if (!inv) { alert('该调查员已被删除'); return; }
+  // 关键修复#9：旧存档可能缺 sceneData 字段，补默认
+  const sceneData = Object.assign({
+    currentCar: 1, conductorAwake: false, hasKey: false,
+    hasCrowbar: false, hasFlashlight: false,
+    warningsTriggered: [], monsterDistance: 8,
+    plotLock: ['conductor_helper', 'key_location', 'finale_brake'],
+    plotEvents: []
+  }, sess.sceneData || {});
   // 恢复会话状态
   state.currentSessionId = sessId;
   state.currentScenarioId = sess.scenarioId;
   state.investigator = JSON.parse(JSON.stringify(inv));
-  state.sceneData = JSON.parse(JSON.stringify(sess.sceneData));
-  state.gamePhase = sess.sceneData.currentCar >= 7 ? 'ended' : 'playing';
+  state.sceneData = sceneData;
+  // 关键修复#8：gamePhase=ended 允许玩家继续输入（回顾/重玩），不阻断流程
+  state.gamePhase = sceneData.currentCar >= 7 ? 'ended' : 'playing';
   // 消息由 enterPlay 渲染
   enterPlay(true);
+  if (state.gamePhase === 'ended') {
+    setTimeout(() => {
+      addMsg('system', `📜 该冒险已结束（车厢 ${sceneData.currentCar}/7）。可以继续对话回顾剧情，或「返回主页」开始新冒险。`, 'system');
+    }, 600);
+  }
 }
 
 function deleteSession(sessId) {
@@ -1597,7 +1652,9 @@ function createLimaiChar() {
   else if (strCon <= 204) { db = '+1D6'; build = 2; }
   else { db = '+2D6'; build = 3; }
 
-  const newId = 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  // 关键修复#4：去重 — 如果档案库已有「黎麦」，则复用其 id；否则才生成新 id
+  const existingLimai = state.investigators.find(i => i.name === '黎麦');
+  const newId = existingLimai ? existingLimai.id : 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
   state.investigator = {
     id: newId,
     ...charData,
@@ -1618,7 +1675,7 @@ function createLimaiChar() {
       scenarioNote: '常暗之厢 — 2013年冬·日本·末班电车'
     }
   };
-  // 同步推入档案库
+  // 同步推入档案库（已存在则不重复推入）
   const idx = state.investigators.findIndex(i => i.id === state.investigator.id);
   if (idx < 0) state.investigators.push(JSON.parse(JSON.stringify(state.investigator)));
   updateCharSheet();
@@ -1688,26 +1745,26 @@ function quickGenerateChar() {
     const modal = document.getElementById('quick-char-modal');
     if (modal) modal.remove();
 
+    // 关键修复#3：游戏中禁止召唤预设角色（会破坏剧情一致性）
+    const isInGame = state.currentView === 'play' && state.currentSessionId;
+    if (isInGame) {
+      showToast('⚠️ 正在游戏中，请先回主页再创建新调查员');
+      addMsg('system', `⚠️ 当前正在剧情中，无法在游戏中创建新角色。请点击「返回主页」按钮，新建角色后再开始冒险。`, 'system');
+      return;
+    }
+
     // 找到当前台本的第一个预设（契合当前剧情）
     const currentScen = SCENARIOS.find(s => s.id === state.currentScenarioId);
     const preset = currentScen && currentScen.presets && currentScen.presets[0];
 
     if (preset && typeof window[preset.createFn] === 'function') {
-      // 根据玩家当前所在场景决定下一步（不能强制跳出当前剧情！）
-      const isInGame = state.currentView === 'play' && state.currentSessionId;
       showToast(`⚡ 召唤「${preset.name}」...`);
       window[preset.createFn]();
-      if (isInGame) {
-        // 情况：玩家正在跑某个模组 → 新档案加入档案库，不切换当前剧情
-        addMsg('system', `📂 「${preset.name}」已加入调查员档案库（${preset.desc}）。当前剧情继续。`, 'system');
-      } else {
-        // 情况：玩家在主页/未开始游戏 → 走台本选择流程
-        showReadyScreen();
-      }
+      // 主页流程：createLimaiChar() 已不调 showReadyScreen()，此处补上
+      showReadyScreen();
     } else {
-      // 兜底：当前台本无预设 → 走普通智能生成
+      // 兜底：当前台本无预设 → 走普通智能生成（不 return，让后续流程接管）
       showToast('⚡ 当前台本无预设，继续生成自定义角色...');
-      // 留空走后续生成流程
     }
     return;
   }
@@ -2641,12 +2698,17 @@ function startScenario() {
 }
 
 function processAction(text) {
-  if (state.gamePhase !== 'playing') {
+  if (state.gamePhase === 'idle') {
     if (text.includes('准备好') || text.includes('开始')) {
       startScenario();
     } else {
       addMsg('kp', `在你开始之前，建议先完成新手教程。点击顶部的「COC新手教程」浏览规则，或者直接告诉我「我准备好了」开始冒险。`);
     }
+    return;
+  }
+  // 关键修复#8：'ended' 阶段允许继续输入（剧情回顾/反应），不阻断
+  if (state.gamePhase === 'ended') {
+    addMsg('system', `📜 该冒险已结束。如需重玩，请「返回主页」开始新冒险。`, 'system');
     return;
   }
 
@@ -2663,10 +2725,14 @@ function runChangAn(text) {
   const sd = state.sceneData;
   const c = state.investigator;
   const lower = text.toLowerCase();
+  // 关键修复#5：精确的「去往前/回去」判断，避免「我有3件物品」「七七八八」等误触
+  const goForward = /^(?:我)?(?:继续)?(?:前|往[前后]|去[前后]|到|进[入]?)(?:下[一节]?)?(?:节)?(?:车[厢])?|^前|^去|^下一|^往前|^往[前后]|^进/.test(lower) ||
+    /前往|去下一|往前走|往前|去前|下一节|下一车/.test(lower);
+  const goBack = /回去|返回|后退|往后|回到|回[1-7]号/.test(lower);
 
   // --- SCENE: CAR 1 - Empty Car ---
   if (sd.currentCar === 1) {
-    if (lower.includes('便签') || lower.includes('纸条') || lower.includes('背面') || lower.includes('翻') || lower.includes('看')) {
+    if (lower.includes('便签') || lower.includes('纸条') || lower.includes('翻') || lower.includes('看背面') || lower.includes('看便签')) {
       addMsg('kp', `你仔细看了看那张便签。正面只有那句话。你把它翻过来，背面用浅色字迹写着——「第三个箱子里有藏着钥匙」。这里的"箱子"指的是车厢编号。也就是说，从车头数第三节车厢里放着什么东西。`);
       sd.currentCar = 1;
       return;
@@ -2681,7 +2747,7 @@ function runChangAn(text) {
       addMsg('kp', `你侧耳倾听。除了电车行驶的咔嗒声之外，你似乎听到了从远处——大概是车尾方向——传来了一些...声响。像是有什么沉重的东西在拖行。吱呀——嘎——节奏很慢，但越来越清晰。`);
       return;
     }
-    if (lower.includes('前') || lower.includes('去') || lower.includes('下一')) {
+    if (goForward) {
       addMsg('kp', `你深吸一口气，推开车厢连接处的门，进入了下一节车厢。这里比前一节稍微破旧一些，座位上有几份散落的报纸，天花板上的灯忽明忽暗。列车继续在黑暗中飞驰。`);
       sd.currentCar = 2;
       sd.monsterDistance = Math.max(6, sd.monsterDistance - 1);
@@ -2700,7 +2766,7 @@ function runChangAn(text) {
 
   // --- CAR 2 ---
   if (sd.currentCar === 2) {
-    if (lower.includes('报纸') || lower.includes('读') || lower.includes('看')) {
+    if (lower.includes('报纸') || lower.includes('读报') || lower.includes('看报') || lower.includes('看报纸')) {
       addMsg('kp', `你捡起散落的报纸。日期是今天，但标题让你背脊发凉——<i>「末班电车连续失踪事件，警方调查陷入僵局」</i>。报道上说，最近一周已有5人在乘坐这趟线路的末班车后下落不明。你的心跳加快了一些。SAN 0/1`);
       if (d100() <= c.san.current) {
         addMsg('system', 'SAN检定成功，未损失理智值');
@@ -2732,14 +2798,14 @@ function runChangAn(text) {
       }
       return;
     }
-    if (lower.includes('前') || lower.includes('去') || lower.includes('找钥匙') || lower.includes('3') || lower.includes('三')) {
+    if (goForward || /前往3|去3|去三|找钥匙|去拿钥匙/.test(lower)) {
       addMsg('kp', `你继续向前，推开车厢连接处的门。门的另一边有股奇怪的气味扑面而来——像是铁锈和什么腐烂的东西混在一起。这节车厢明显比刚才的凌乱得多，到处散落着行李。`);
       sd.currentCar = 3;
       sd.monsterDistance = Math.max(5, sd.monsterDistance - 2);
       advanceMonster();
       return;
     }
-    if (lower.includes('回') || lower.includes('后') || lower.includes('退')) {
+    if (goBack) {
       addMsg('kp', `你回头看了一眼刚才来的方向。那边的灯光已经完全熄灭了，一片漆黑。而且...你好像听到了什么。一种沉闷的、持续的碾压声。就在那边。`);
       return;
     }
@@ -2747,7 +2813,7 @@ function runChangAn(text) {
 
   // --- CAR 3 - Key Car ---
   if (sd.currentCar === 3) {
-    if (lower.includes('钥匙') || lower.includes('箱') || lower.includes('找') || lower.includes('搜索') || lower.includes('侦查')) {
+    if (lower.includes('钥匙') || lower.includes('找') || lower.includes('搜索') || lower.includes('侦查') || lower.includes('找钥匙')) {
       const res = skillRoll('侦查');
       if (res.level === 'success' || res.level === 'hard' || res.level === 'extreme' || res.level === 'crit') {
         addMsg('kp', `你在3号车厢的行李架角落找到了一个用布包裹的小盒子。打开一看——里面是一把<b>陈旧的黄铜钥匙</b>。钥匙上刻着一行小字：「车长室」。\n\n获得物品：黄铜钥匙`);
@@ -2763,7 +2829,7 @@ function runChangAn(text) {
       addMsg('kp', `你循着气味看去，发现车厢角落的地板上有一滩暗色的污渍。看起来像是什么液体...你不太确定那是什么，也不想碰它。`);
       return;
     }
-    if (lower.includes('前') || lower.includes('4') || lower.includes('四')) {
+    if (goForward || /前往4|去4|去四/.test(lower)) {
       addMsg('kp', `你穿过3号车厢，走向4号。这里的灯光更暗了，只有紧急出口的绿光在闪烁。你注意到4号车厢的连接门——上锁了。需要一把钥匙。`);
       return;
     }
@@ -2771,10 +2837,10 @@ function runChangAn(text) {
 
   // --- CAR 4 - Conductors Car ---
   if (sd.currentCar === 4) {
-    if ((lower.includes('钥匙') || lower.includes('开') || lower.includes('门')) && sd.hasKey) {
+    // 关键修复#6：仅在 conductorAwake=false 且有钥匙时开门；开门后不重复触发
+    if (!sd.conductorAwake && sd.hasKey && (lower.includes('开') || lower.includes('钥匙') || lower.includes('开门') || lower.includes('用钥匙'))) {
       addMsg('kp', `你用黄铜钥匙打开了通往4号车厢的门。门锁咔哒一声弹开。\n\n4号车厢是一节乘务员车厢。这里堆放着一些工具和杂物。一个穿着制服的<b>乘务员</b>蜷缩在角落里，听到声音猛地抬起头来。\n\n"你...你是活人？"他声音颤抖。他的腿上有一道触目惊心的伤口，被用撕碎的衬衫布条草草包扎着。`);
       sd.conductorAwake = true;
-      sd.currentCar = 4;
       registerNPC('conductor', '乘务员·京山人吉', {
         age:'30代', gender:'男', appearance:'穿JR制服的男性，30岁左右，瘦高，脸色苍白。右腿上有严重的咬伤，用撕碎的衬衫布条包扎着。眼神慌乱但不失善意。',
         relation:'neutral',
@@ -2783,7 +2849,7 @@ function runChangAn(text) {
       return;
     }
     if (sd.conductorAwake) {
-      if (lower.includes('问') || lower.includes('怎么') || lower.includes('发生') || lower.includes('交涉') || lower.includes('话术')) {
+      if (lower.includes('问') || lower.includes('怎么') || lower.includes('发生') || lower.includes('交涉') || lower.includes('话术') || lower.includes('聊')) {
         addMsg('kp', `乘务员脸色苍白地说：\n\n"我们...遇到了怪物。不是人。它从后面车厢开始...一个一个地吞噬乘客。我跑的时候摔倒了，被它抓了一下。我把其他车厢的门都锁了，想着至少能让它慢一点..."\n\n他顿了顿："车头有紧急制动。如果能到那里，拉下闸就能停车。但前面的路...我得警告你，越靠近车头越危险。"`);
         addMsg('tip', '你了解到：①车头有紧急制动 ②怪物从车尾来 ③越往前越接近车头——但也意味着往车尾方向是怪物', '情报');
         updateNPCInfo('conductor', 'info', '知道车头有紧急制动闸');
@@ -2801,7 +2867,7 @@ function runChangAn(text) {
         }
         return;
       }
-      if (lower.includes('前') || lower.includes('5') || lower.includes('五')) {
+      if (goForward || /前往5|去5|去五/.test(lower)) {
         addMsg('kp', `你告别乘务员，继续前进。他叫住你："小心！前面..."他的声音消失在门后。\n\n5号车厢被杂物堵塞了。你需要清理出一条路来。`);
         sd.currentCar = 5;
         sd.monsterDistance = Math.max(3, sd.monsterDistance - 2);
@@ -3340,18 +3406,20 @@ function updateNPCInfo(id, key, value) {
 function openNPCCard(npcId) {
   const npc = state.npcs.find(n => n.id === npcId);
   if (!npc) return;
+  // 关键修复#10：所有用户/AI 注入字段必须 escape，防 XSS
+  const esc = escapeHTML;
   const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'npc-card-modal';
-  const infoHtml = npc.info.map(i => `<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);color:var(--eldritch-green)">📌 ${i}</div>`).join('');
+  const infoHtml = npc.info.map(i => `<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);color:var(--eldritch-green)">📌 ${esc(i)}</div>`).join('');
   overlay.innerHTML = `<div class="modal" style="width:420px;max-height:80vh;overflow-y:auto">
-    <h3>📇 ${npc.name}</h3>
+    <h3>📇 ${esc(npc.name)}</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;font-size:12px">
-      <div><span style="color:var(--text-muted)">年龄:</span> ${npc.age}</div>
-      <div><span style="color:var(--text-muted)">性别:</span> ${npc.gender}</div>
+      <div><span style="color:var(--text-muted)">年龄:</span> ${esc(npc.age)}</div>
+      <div><span style="color:var(--text-muted)">性别:</span> ${esc(npc.gender)}</div>
       <div><span style="color:var(--text-muted)">关系:</span> <span style="color:${npc.relation==='friendly'?'var(--green-light)':npc.relation==='hostile'?'var(--crimson-light)':'var(--text-muted)'}">${npc.relation==='friendly'?'友好':npc.relation==='hostile'?'敌对':'中立'}</span></div>
-      <div><span style="color:var(--text-muted)">首次出现:</span> 车厢#${npc.firstSeen}</div>
+      <div><span style="color:var(--text-muted)">首次出现:</span> 车厢#${esc(String(npc.firstSeen))}</div>
     </div>
     <h4 style="font-size:11px;color:var(--eldritch-teal);margin-bottom:4px">样貌特征</h4>
-    <div style="font-size:12px;color:var(--text-secondary);padding:6px 8px;background:var(--bg-tertiary);border-radius:var(--radius);margin-bottom:8px">${npc.appearance}</div>
+    <div style="font-size:12px;color:var(--text-secondary);padding:6px 8px;background:var(--bg-tertiary);border-radius:var(--radius);margin-bottom:8px">${esc(npc.appearance)}</div>
     <h4 style="font-size:11px;color:var(--eldritch-teal);margin-bottom:4px">获取的情报</h4>
     ${infoHtml || '<div style="font-size:11px;color:var(--text-muted);padding:8px">尚未获取到信息</div>'}
     <button class="btn-secondary" onclick="document.getElementById('npc-card-modal').remove()" style="margin-top:10px">关闭</button>
@@ -3368,8 +3436,8 @@ function renderNPCList() {
   }
   el.innerHTML = state.npcs.map(n => {
     const color = n.relation==='friendly'?'var(--green-light)':n.relation==='hostile'?'var(--crimson-light)':'var(--text-muted)';
-    return `<div class="npc-item" onclick="openNPCCard('${n.id}')" style="cursor:pointer">
-      <span class="npc-name">${n.name}</span>
+    return `<div class="npc-item" onclick="openNPCCard('${escapeHTML(n.id)}')" style="cursor:pointer">
+      <span class="npc-name">${escapeHTML(n.name)}</span>
       <span class="npc-rel" style="color:${color};font-size:10px">${n.relation==='friendly'?'友好':n.relation==='hostile'?'敌对':'中立'}${n.info.length?' ('+n.info.length+')':''}</span>
     </div>`;
   }).join('');
@@ -3377,14 +3445,13 @@ function renderNPCList() {
 
 // ==================== SAVE ====================
 function saveGame() {
-  // 把当前 investigator 写回 investigators 列表
+  // 把当前 investigator 写回 investigators 列表（关键修复#7：只用 state.investigator.id）
   if (state.investigator) {
-    const idx = state.investigators.findIndex(i => i.id === (state.investigator.id || state.investigatorId));
-    if (idx >= 0) state.investigators[idx] = JSON.parse(JSON.stringify(state.investigator));
-    else if (!state.investigator.id && !state.investigatorId) {
-      // 旧数据没id，分配一个
-      state.investigator.id = 'inv_' + Date.now();
-      state.investigators.push(JSON.parse(JSON.stringify(state.investigator)));
+    const invId = state.investigator.id;
+    if (invId) {
+      const idx = state.investigators.findIndex(i => i.id === invId);
+      if (idx >= 0) state.investigators[idx] = JSON.parse(JSON.stringify(state.investigator));
+      else state.investigators.push(JSON.parse(JSON.stringify(state.investigator)));
     }
   }
   saveCurrentSession();
@@ -3392,13 +3459,10 @@ function saveGame() {
   showToast('游戏已保存 💾');
 }
 function autoSave() {
-  // 同步当前 investigator → investigators
-  if (state.investigator) {
-    const invId = state.investigator.id || state.investigatorId;
-    if (invId) {
-      const idx = state.investigators.findIndex(i => i.id === invId);
-      if (idx >= 0) state.investigators[idx] = JSON.parse(JSON.stringify(state.investigator));
-    }
+  // 同步当前 investigator → investigators（关键修复#7：删除 state.investigatorId 字段引用）
+  if (state.investigator && state.investigator.id) {
+    const idx = state.investigators.findIndex(i => i.id === state.investigator.id);
+    if (idx >= 0) state.investigators[idx] = JSON.parse(JSON.stringify(state.investigator));
   }
   saveCurrentSession();
   localStorage.setItem('coc-kp-state', JSON.stringify(state));
