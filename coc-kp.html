@@ -975,7 +975,7 @@ function showInvestigatorSelect(scenarioId) {
             <div class="ipc-stats">HP${inv.hp.max} SAN${inv.san.max} DEX${inv.attrs.dex}</div>
           </div>
         `).join('')}
-        <div class="inv-pick-card add" onclick="openCharCreate();document.getElementById('home-detail').innerHTML='';setTimeout(()=>location.reload(),100)">
+        <div class="inv-pick-card add" onclick="openCharCreate()">
           <div class="ipc-icon">+</div>
           <div class="ipc-name">新建调查员</div>
         </div>
@@ -987,7 +987,7 @@ function showInvestigatorSelect(scenarioId) {
 
 function confirmPickInv(invId) {
   const inv = state.investigators.find(i => i.id === invId);
-  if (!inv) return;
+  if (!inv) { console.warn('confirmPickInv: 调查员未找到', invId); showToast('⚠️ 调查员数据异常，请重试'); return; }
   // 创建新会话
   const session = {
     id: 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
@@ -1510,7 +1510,7 @@ function createLimaiChar() {
 
   const newId = 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
   state.investigator = {
-    _id: newId,
+    id: newId,
     ...charData,
     hp: { current: hp, max: hp },
     mp: { current: Math.floor(sanVal/5), max: Math.floor(sanVal/5) },
@@ -1642,7 +1642,7 @@ function quickGenerateChar() {
   if (sCon<=64){db='-2';build=-2;}else if(sCon<=84){db='-1';build=-1;}else if(sCon<=124){db='0';build=0;}else if(sCon<=164){db='+1D4';build=1;}else if(sCon<=204){db='+1D6';build=2;}else{db='+2D6';build=3;}
 
   state.investigator = {
-    _id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
     name, playerName:name, occ, era:'2013年', age, gender,
     residence: bg.match(/住在[^，。]+/)?.[0] || bg.match(/在[^的]+/)?.[0] || '未知',
     birthplace: bg.match(/上海|北京|广州|深圳|杭州|成都/)?.[0] || '中国',
@@ -2124,7 +2124,7 @@ function saveChar() {
   const credit = parseInt(document.getElementById('cc-credit').value) || 0;
 
   state.investigator = {
-    _id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
     name: document.getElementById('cc-name').value.trim() || '无名调查员',
     playerName: document.getElementById('cc-player').value.trim(),
     occ: occ,
@@ -2162,8 +2162,8 @@ function saveChar() {
   updateCharSheet();
   autoSave();
   // 推入 investigators
-  if (state.investigator && state.investigator._id) {
-    const idx = state.investigators.findIndex(i => i.id === state.investigator._id);
+  if (state.investigator && state.investigator.id) {
+    const idx = state.investigators.findIndex(i => i.id === state.investigator.id);
     if (idx < 0) state.investigators.push(JSON.parse(JSON.stringify(state.investigator)));
   }
   addMsg('system', `🎭 调查员「${state.investigator.name}」创建完成！`, 'system');
@@ -2785,16 +2785,16 @@ function renderClues() {
     : '<div style="font-size:11px;color:var(--text-muted);padding:12px 0;text-align:center">游戏开始后线索会显示在这里</div>';
 }
 function showReadyScreen() {
-  // 新流程：创建完调查员后自动弹台本选择
-  if (state.currentSessionId === null) {
-    // 新建的调查员还没绑定 session —— 跳到台本选择
-    renderHome();
-    document.getElementById('home-area').style.display = '';
-    document.getElementById('play-area').style.display = 'none';
-    // 自动弹台本选择
-    if (state.currentScenarioId) showInvestigatorSelect(state.currentScenarioId);
-    else showScenarioSelect();
-  }
+  // 新流程：创建完调查员 → 自动跳转台本选择
+  document.getElementById('home-area').style.display = '';
+  document.getElementById('play-area').style.display = 'none';
+  document.getElementById('left-panel').style.display = 'none';
+  state.currentView = 'home';
+  state.currentSessionId = null;
+  renderHome();
+  if (state.currentScenarioId) showInvestigatorSelect(state.currentScenarioId);
+  else showScenarioSelect();
+  showToast('🎭 调查员已就绪！选择台本开始冒险');
 }
 function startGame() {
   if (!state.investigator) { goHome(); return; }
@@ -2806,7 +2806,7 @@ function startGame() {
 function pickFirstScenarioForCurrent() {
   // 旧"创建完直接开始" 流程：自动选常暗之厢 + 当前调查员
   state.currentScenarioId = 'chang-an';
-  confirmPickInv(state.investigator._id);
+  confirmPickInv(state.investigator.id);
 }
 function goHome() {
   saveCurrentSession();
@@ -3196,11 +3196,11 @@ function renderNPCList() {
 function saveGame() {
   // 把当前 investigator 写回 investigators 列表
   if (state.investigator) {
-    const idx = state.investigators.findIndex(i => i.id === (state.investigator._id || state.investigatorId));
+    const idx = state.investigators.findIndex(i => i.id === (state.investigator.id || state.investigatorId));
     if (idx >= 0) state.investigators[idx] = JSON.parse(JSON.stringify(state.investigator));
-    else if (!state.investigator._id && !state.investigatorId) {
+    else if (!state.investigator.id && !state.investigatorId) {
       // 旧数据没id，分配一个
-      state.investigator._id = 'inv_' + Date.now();
+      state.investigator.id = 'inv_' + Date.now();
       state.investigators.push(JSON.parse(JSON.stringify(state.investigator)));
     }
   }
@@ -3211,7 +3211,7 @@ function saveGame() {
 function autoSave() {
   // 同步当前 investigator → investigators
   if (state.investigator) {
-    const invId = state.investigator._id || state.investigatorId;
+    const invId = state.investigator.id || state.investigatorId;
     if (invId) {
       const idx = state.investigators.findIndex(i => i.id === invId);
       if (idx >= 0) state.investigators[idx] = JSON.parse(JSON.stringify(state.investigator));
