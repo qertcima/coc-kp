@@ -2008,7 +2008,14 @@ function sendMsg() {
     return;
   }
 
-  if (!state.tutorialDone && state.tutorialStep < 5) {
+  if (!state.tutorialDone && state.tutorialStep < 5 && state.gamePhase !== 'playing') {
+    // 「准备好了」/「开始」/「出发」任何其一都视为跳过教程
+    if (text.includes('准备好') || text.includes('开始') || text.includes('出发')) {
+      state.tutorialDone = true;
+      state.tutorialStep = 5;
+      if (state.investigator) startScenario();
+      return;
+    }
     addMsg('tip', '建议你完成新手教程后再开始冒险。点击顶部的教程进度条可以查看各章节，或者直接输入"我准备好了"跳过教程。');
     return;
   }
