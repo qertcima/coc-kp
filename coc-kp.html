@@ -1885,9 +1885,7 @@ function getTier(v) {
 // ==================== 角色卡刷新 ====================
 function updateCharSheet() {
   const c = state.investigator;
-  const ids = ['c-name','c-occ','c-demo','c-residence','hp-text','san-text','luck-text',
-               'hp-bar','san-bar','luck-bar','c-db','c-mp','attr-grid','inv-list','wealth-display','skills-list'];
-  const safe = (id) => document.getElementById(id);  // 容错返回null
+  const safe = (id) => { const el = document.getElementById(id); return el || { textContent:'', style:{width:'',display:''}, innerHTML:'' }; };
   if (!c) {
     safe('c-name').textContent = '—';
     safe('c-occ').textContent = '—';
@@ -2159,6 +2157,7 @@ function sanCheck(difficulty) {
 
 // ==================== SCENARIO: 常暗之厢 ====================
 function startScenario() {
+  if (state.gamePhase === 'playing') return;  // 幂等保护
   state.gamePhase = 'playing';
   state.sceneData.currentCar = 1;
   addMsg('system', '========== 常暗之厢 ==========', 'system');
@@ -2352,6 +2351,7 @@ function processAction(text) {
       if (sd.hasCrowbar) {
         addMsg('kp', `你用撬棍和双手清理出一条路来。`);
         sd.currentCar = 6;
+        sd.monsterDistance = Math.max(2, sd.monsterDistance - 1);
         advanceMonster();
         return;
       }
@@ -2701,6 +2701,9 @@ async function callAI(userInput) {
   btn.disabled = false;
   btn.textContent = '行动';
 }
+
+/* ========== 骰娘快捷指令（别名） ========== */
+function sendDiceCmd(cmd) { handleDiceCmd(cmd); }
 
 /* ========== 骰娘命令解析 ========== */
 function handleDiceCmd(cmd) {
