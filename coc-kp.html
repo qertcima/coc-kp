@@ -500,15 +500,58 @@ body {
 .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
 .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes dotPulse { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+/* ==================== 主页样式 ==================== */
+.home-scroll { padding: 30px 24px; overflow-y: auto; height: 100%; }
+.home-hero { text-align: center; margin-bottom: 30px; padding: 20px 0; }
+.home-hero h1 { font-size: 32px; color: var(--eldritch-teal); margin: 0 0 8px; letter-spacing: 2px; text-shadow: 0 0 20px rgba(55,244,153,0.3); }
+.home-hero .home-sub { color: var(--text-muted); font-size: 13px; margin: 0; }
+.home-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 800px; margin: 0 auto; }
+.home-card { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px 16px; text-align: center; cursor: pointer; transition: all 0.2s; }
+.home-card:hover { border-color: var(--eldritch-teal); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(55,244,153,0.15); }
+.hc-icon { font-size: 36px; margin-bottom: 8px; }
+.hc-title { font-size: 14px; color: var(--text-primary); font-weight: 600; margin-bottom: 4px; }
+.hc-desc { font-size: 11px; color: var(--text-muted); }
+.detail-panel { max-width: 800px; margin: 0 auto; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+.detail-panel h3 { margin: 0 0 16px; color: var(--eldritch-teal); font-size: 16px; }
+.scenario-card { display: flex; gap: 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; align-items: flex-start; transition: all 0.2s; }
+.scenario-card:hover { border-color: var(--eldritch-teal); }
+.sc-icon { font-size: 36px; flex-shrink: 0; }
+.sc-info { flex: 1; }
+.sc-name { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.sc-meta { font-size: 11px; color: var(--text-muted); margin: 2px 0; }
+.sc-bg { font-size: 12px; color: var(--text-secondary); margin: 8px 0; line-height: 1.5; }
+.sc-obj { font-size: 12px; color: var(--crimson-light); }
+.sc-btn { background: var(--crimson); border: none; color: #fff; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font-size: 12px; flex-shrink: 0; align-self: center; }
+.inv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.inv-pick-card { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: all 0.2s; }
+.inv-pick-card:hover { border-color: var(--eldritch-teal); }
+.inv-pick-card.add { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90px; border-style: dashed; }
+.ipc-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.ipc-meta { font-size: 11px; color: var(--text-muted); }
+.ipc-stats { font-size: 11px; color: var(--eldritch-teal); margin-top: 4px; }
+.ipc-icon { font-size: 28px; color: var(--text-muted); }
+.session-card { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; }
+.sess-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.sess-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.sess-time { font-size: 10px; color: var(--text-muted); }
+.sess-meta { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+.sess-preview { font-size: 11px; color: var(--text-muted); font-style: italic; line-height: 1.4; max-height: 36px; overflow: hidden; }
+.sess-actions { display: flex; gap: 6px; margin-top: 8px; }
+.sess-actions button { padding: 4px 10px; font-size: 11px; }
+.empty-tip { text-align: center; color: var(--text-muted); padding: 30px; font-size: 12px; }
+.play-header { display: flex; gap: 12px; align-items: center; padding: 8px 16px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+.play-title { font-size: 13px; color: var(--eldritch-teal); font-weight: 600; }
+.home-btn { background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-secondary); padding: 4px 10px; border-radius: var(--radius); cursor: pointer; font-size: 11px; }
 </style>
 </head>
 <body>
 
 <!-- Top Bar -->
 <div class="topbar">
-  <div class="logo">🕯 COC 守秘人 <span>| 常暗之厢</span></div>
+  <div class="logo" id="topbar-title">🕯 COC 守秘人 <span>| 主页</span></div>
   <div class="spacer"></div>
-  <button class="tutorial-btn" onclick="openTutorial()">📖 COC新手教程</button>
+  <button class="tutorial-btn" onclick="openTutorial()">📖 教程</button>
   <button onclick="goHome()">🏠 主页</button>
   <button onclick="openDice()">🎲 掷骰</button>
   <button onclick="openBackpack()">🎒 背包</button>
@@ -558,49 +601,19 @@ body {
   </div>
 
   <!-- Center -->
-  <div class="center-panel">
+  <!-- 主页区域（默认显示） -->
+  <div class="center-panel" id="home-area">
+    <div class="home-scroll" id="home-scroll">
+      <!-- 动态渲染：renderHome() -->
+    </div>
+  </div>
+
+  <!-- 游戏区域（选完台本+调查员后进入） -->
+  <div class="center-panel" id="play-area" style="display:none;flex-direction:column">
+    <div class="play-header" id="play-header"></div>
     <div class="chat-area" id="chat-area">
-      <div class="chat-empty" id="welcome-screen">
-        <h2>🕯 欢迎，调查员</h2>
-        <div style="font-size:13px;color:var(--text-secondary);max-width:480px;margin:0 auto 14px;line-height:1.8">
-          <p><b>📖 常暗之厢 — 你的第一次COC冒险</b></p>
-          <p style="font-size:12px;color:var(--text-muted);margin:6px 0">
-            规则：COC 7th Edition ｜ 难易度：★☆☆☆☆ (新手向)<br>
-            时长：30-60分钟 ｜ 推荐技能：侦查·急救·话术·潜行
-          </p>
-          <p style="font-size:12px;color:var(--text-muted);margin:6px 0">
-            <b>背景</b>：2013年，你加班后搭上末班电车沉沉睡去。
-            醒来时乘客全部消失，窗外一片漆黑，电车仍在飞驰——
-            车门上贴着一张字条：「只管前进吧，已经没有退路了」。
-          </p>
-          <p style="font-size:12px;color:var(--text-muted)">
-            <b>目标</b>：在车厢间前进探索 → 找到车头驾驶室 → 拉下紧急制动闸逃出生天。
-            注意：在你身后，有什么东西正在一节一节地吞噬车厢……
-          </p>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-          <button class="q-btn" onclick="openQuickCreate()" style="background:var(--eldritch-green);color:#0a0e1a;font-size:12px;padding:6px 14px;font-weight:600">⚡ 智能建卡</button>
-          <button class="q-btn" onclick="openCharCreate()" style="background:var(--crimson);color:#fff;font-size:12px;padding:6px 14px">🎭 手动创建</button>
-          <button class="q-btn" onclick="createLimaiChar();" style="background:var(--crimson-light);color:#fff;font-size:12px;padding:6px 14px">🇨🇳 黎麦预设</button>
-          <button class="q-btn" onclick="openTutorial()" style="background:var(--bg-tertiary);color:var(--text-secondary);font-size:12px;padding:6px 14px;border:1px solid var(--border)">📖 教程</button>
-        </div>
-      </div>
-      <!-- 角色就绪面板 -->
-      <div class="chat-empty" id="ready-screen" style="display:none;">
-        <h2>🎭 调查员就绪</h2>
-        <div style="font-size:13px;color:var(--text-secondary);max-width:400px;margin:0 auto;line-height:1.8">
-          <p>角色已创建完成。</p>
-          <p style="font-size:12px;color:var(--text-muted)">准备好了就开始你的第一次COC冒险吧。</p>
-        </div>
-        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
-          <button onclick="startGame()" style="background:var(--crimson);border:none;color:#fff;padding:12px 36px;border-radius:var(--radius-lg);cursor:pointer;font-size:15px;font-weight:600;letter-spacing:1px">🚃 开始冒险</button>
-          <button onclick="openCharView()" style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-secondary);padding:10px 20px;border-radius:var(--radius-lg);cursor:pointer;font-size:12px">📋 查看角色卡</button>
-        </div>
-        <div style="margin-top:16px;font-size:11px;color:var(--text-muted)">或者直接在下方输入「准备好了」开始</div>
-      </div>
       <div id="chat-messages"></div>
     </div>
-
     <div class="quick-bar" id="quick-bar">
       <button class="q-btn" onclick="qAction('侦查')">🔍 侦查</button>
       <button class="q-btn" onclick="qAction('聆听')">👂 聆听</button>
@@ -615,7 +628,6 @@ body {
       <button class="q-btn" onclick="sendDiceCmd('.ti')">💥 疯狂</button>
       <button class="q-btn" onclick="sendDiceCmd('.help')">📖 帮助</button>
     </div>
-
     <div class="input-area">
       <textarea id="user-input" placeholder="描述行动 或 骰娘指令 .r .ra .sc .ti .help" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
       <button class="send-btn" onclick="sendMsg()" id="send-btn">行动</button>
@@ -787,19 +799,46 @@ const ABBR_DICT = {
   '3D6':'投3个6面骰，结果3-18，再×5得到15-90的属性值'
 };
 
+// ==================== 多模组状态 ====================
+// 模组定义：每个模组一份配置，含剧情钩子
+const SCENARIOS = [
+  {
+    id: 'chang-an',
+    name: '常暗之厢',
+    shortName: '常暗之厢',
+    era: '现代日本',
+    difficulty: '★☆☆☆☆ 新手向',
+    duration: '30-60分钟',
+    skills: '侦查·急救·话术·潜行',
+    bg: '2013年，你加班后搭上末班电车沉沉睡去。醒来时乘客全部消失，窗外一片漆黑，电车仍在飞驰——车门上贴着一张字条：「只管前进吧，已经没有退路了」。',
+    objective: '在车厢间前进探索 → 找到车头驾驶室 → 拉下紧急制动闸逃出生天。注意：在你身后，有什么东西正在一节一节地吞噬车厢……',
+    icon: '🚃'
+  }
+];
+
 let state = {
+  // ============= 跨模组持久化 =============
+  investigators: [],         // 全部调查员档案: [{id, name, ...}, ...]
+  sessions: [],              // 全部历史对话: [{id, scenarioId, investigatorId, messages, sceneData, lastPlayed, name}, ...]
+  
+  // ============= 当前运行 =============
+  currentSessionId: null,    // 当前打开的对话
+  currentScenarioId: null,   // 当前对话所属模组
+  currentView: 'home',       // 'home' | 'scenario-select' | 'investigator-select' | 'play'
+  
+  // 兼容老 state 字段（processAction 用），从 session 恢复
   investigator: null,
   gamePhase: 'idle',
   clues: [],
-  npcs: [],        // NPC registry: {id, name, age, gender, appearance, notes, info, firstSeen, relation}
+  npcs: [],
   tutorialStep: 0,
   tutorialDone: false,
   sceneData: {
     currentCar: 1, conductorAwake: false, hasKey: false,
     hasCrowbar: false, hasFlashlight: false,
     warningsTriggered: [], monsterDistance: 8,
-    plotLock: ['conductor_helper', 'key_location', 'finale_brake'],  // 关键剧情节点不可修改
-    plotEvents: []   // 已触发的关键事件
+    plotLock: ['conductor_helper', 'key_location', 'finale_brake'],
+    plotEvents: []
   },
   settings: {
     apiEndpoint: '',
@@ -825,14 +864,272 @@ function init() {
     try {
       const p = JSON.parse(saved);
       state = { ...state, ...p };
-      if (state.investigator) updateCharSheet();
-      if (state.tutorialDone) renderTutorialBar(true);
-      else renderTutorialBar();
-      renderClues();
+      if (!state.investigators) state.investigators = [];
+      if (!state.sessions) state.sessions = [];
     } catch(e) {}
   }
+  if (state.investigator) updateCharSheet();
   renderTutorialBar();
-  renderRules();
+  renderClues();
+  // 启动显示主页
+  if (state.currentView !== 'play' || !state.currentSessionId) {
+    state.currentView = 'home';
+    state.currentSessionId = null;
+    document.getElementById('home-area').style.display = '';
+    document.getElementById('play-area').style.display = 'none';
+  } else {
+    // 恢复上次会话
+    document.getElementById('home-area').style.display = 'none';
+    document.getElementById('play-area').style.display = 'flex';
+  }
+  renderHome();
+}
+
+/* ==================== 主页 / 模组选择 / 调查员 / 会话 ==================== */
+function goHome() {
+  saveCurrentSession();
+  state.currentView = 'home';
+  state.currentSessionId = null;
+  state.currentScenarioId = null;
+  // 隐藏游戏界面元素
+  document.getElementById('play-area').style.display = 'none';
+  document.getElementById('home-area').style.display = 'block';
+  renderHome();
+  autoSave();
+}
+
+function renderHome() {
+  document.getElementById('topbar-title').innerHTML =
+    state.currentView === 'play' ? '🕯 COC 守秘人 <span>| 游戏中</span>' : '🕯 COC 守秘人 <span>| 主页</span>';
+  const home = document.getElementById('home-scroll');
+  if (!home) return;
+  home.innerHTML = `
+    <div class="home-hero">
+      <h1>🕯 COC 守秘人</h1>
+      <p class="home-sub">单人跑团 · AI KP · 沉浸式COC 7e体验</p>
+    </div>
+    <div class="home-grid">
+      <div class="home-card" onclick="showScenarioSelect()">
+        <div class="hc-icon">📜</div>
+        <div class="hc-title">选择台本</div>
+        <div class="hc-desc">${SCENARIOS.length} 个可跑模组</div>
+      </div>
+      <div class="home-card" onclick="showInvestigatorSelect()">
+        <div class="hc-icon">🎭</div>
+        <div class="hc-title">调查员档案</div>
+        <div class="hc-desc">${state.investigators.length} 个角色</div>
+      </div>
+      <div class="home-card" onclick="showSessionList()">
+        <div class="hc-icon">💬</div>
+        <div class="hc-title">过往对话</div>
+        <div class="hc-desc">${state.sessions.length} 条记录</div>
+      </div>
+    </div>
+    <div id="home-detail" style="margin-top:20px"></div>
+  `;
+}
+
+function showScenarioSelect() {
+  const detail = document.getElementById('home-detail');
+  detail.innerHTML = `
+    <div class="detail-panel">
+      <h3>📜 选择台本</h3>
+      ${SCENARIOS.map(s => `
+        <div class="scenario-card" onclick="pickScenario('${s.id}')">
+          <div class="sc-icon">${s.icon}</div>
+          <div class="sc-info">
+            <div class="sc-name">${s.name}</div>
+            <div class="sc-meta">${s.era} · ${s.difficulty} · ${s.duration}</div>
+            <div class="sc-meta">推荐技能：${s.skills}</div>
+            <div class="sc-bg">${s.bg}</div>
+            <div class="sc-obj"><b>目标：</b>${s.objective}</div>
+          </div>
+          <button class="sc-btn">进入 →</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function pickScenario(scenarioId) {
+  state.currentScenarioId = scenarioId;
+  // 进入"选调查员"步骤
+  showInvestigatorSelect(scenarioId);
+}
+
+function showInvestigatorSelect(scenarioId) {
+  const detail = document.getElementById('home-detail');
+  const list = state.investigators;
+  const title = scenarioId ? `为「${SCENARIOS.find(s=>s.id===scenarioId).name}」选择调查员` : '调查员档案';
+  detail.innerHTML = `
+    <div class="detail-panel">
+      <h3>${title}</h3>
+      ${list.length === 0 ? '<div class="empty-tip">还没有调查员，请先创建</div>' : ''}
+      <div class="inv-grid">
+        ${list.map(inv => `
+          <div class="inv-pick-card" onclick="${scenarioId ? `confirmPickInv('${inv.id}')` : `editInv('${inv.id}')`}">
+            <div class="ipc-name">${inv.name}</div>
+            <div class="ipc-meta">${inv.occ||'-'} · ${inv.age||'?'}岁</div>
+            <div class="ipc-stats">HP${inv.hp.max} SAN${inv.san.max} DEX${inv.attrs.dex}</div>
+          </div>
+        `).join('')}
+        <div class="inv-pick-card add" onclick="openCharCreate();document.getElementById('home-detail').innerHTML='';setTimeout(()=>location.reload(),100)">
+          <div class="ipc-icon">+</div>
+          <div class="ipc-name">新建调查员</div>
+        </div>
+      </div>
+      ${scenarioId ? '<button class="btn-secondary" onclick="showScenarioSelect()" style="margin-top:10px">← 返回台本选择</button>' : ''}
+    </div>
+  `;
+}
+
+function confirmPickInv(invId) {
+  const inv = state.investigators.find(i => i.id === invId);
+  if (!inv) return;
+  // 创建新会话
+  const session = {
+    id: 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    scenarioId: state.currentScenarioId,
+    investigatorId: invId,
+    name: `${inv.name} @ ${SCENARIOS.find(s=>s.id===state.currentScenarioId).name}`,
+    messages: [],
+    sceneData: {
+      currentCar: 1, conductorAwake: false, hasKey: false,
+      hasCrowbar: false, hasFlashlight: false,
+      warningsTriggered: [], monsterDistance: 8,
+      plotLock: ['conductor_helper', 'key_location', 'finale_brake'],
+      plotEvents: []
+    },
+    lastPlayed: Date.now()
+  };
+  state.sessions.push(session);
+  // 调查员复制到当前实例
+  state.investigator = JSON.parse(JSON.stringify(inv));
+  state.investigatorId = invId;
+  state.currentSessionId = session.id;
+  state.gamePhase = 'idle';
+  state.tutorialStep = 0;
+  state.tutorialDone = false;
+  enterPlay();
+}
+
+function showSessionList() {
+  const detail = document.getElementById('home-detail');
+  const sessions = [...state.sessions].sort((a,b)=>b.lastPlayed - a.lastPlayed);
+  detail.innerHTML = `
+    <div class="detail-panel">
+      <h3>💬 过往对话</h3>
+      ${sessions.length === 0 ? '<div class="empty-tip">还没有对话记录</div>' : ''}
+      ${sessions.map(s => {
+        const inv = state.investigators.find(i => i.id === s.investigatorId);
+        const scen = SCENARIOS.find(x => x.id === s.scenarioId);
+        const lastMsg = s.messages[s.messages.length-1];
+        const preview = lastMsg ? (lastMsg.content||'').slice(0,60) : '（空）';
+        return `
+          <div class="session-card">
+            <div class="sess-head">
+              <span class="sess-title">${s.name||'未命名'}</span>
+              <span class="sess-time">${new Date(s.lastPlayed).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'})}</span>
+            </div>
+            <div class="sess-meta">${scen?scen.icon+' '+scen.name:''} · ${inv?inv.name:'调查员已删除'}</div>
+            <div class="sess-preview">${preview}...</div>
+            <div class="sess-actions">
+              <button class="btn-primary" onclick="continueSession('${s.id}')">▶ 继续</button>
+              <button class="btn-secondary" onclick="deleteSession('${s.id}')">🗑 删除</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function continueSession(sessId) {
+  const sess = state.sessions.find(s => s.id === sessId);
+  if (!sess) return;
+  const inv = state.investigators.find(i => i.id === sess.investigatorId);
+  if (!inv) { alert('该调查员已被删除'); return; }
+  // 恢复会话状态
+  state.currentSessionId = sessId;
+  state.currentScenarioId = sess.scenarioId;
+  state.investigator = JSON.parse(JSON.stringify(inv));
+  state.sceneData = JSON.parse(JSON.stringify(sess.sceneData));
+  state.gamePhase = sess.sceneData.currentCar >= 7 ? 'ended' : 'playing';
+  // 消息由 enterPlay 渲染
+  enterPlay(true);
+}
+
+function deleteSession(sessId) {
+  if (!confirm('删除这条对话记录？')) return;
+  state.sessions = state.sessions.filter(s => s.id !== sessId);
+  if (state.currentSessionId === sessId) state.currentSessionId = null;
+  autoSave();
+  showSessionList();
+}
+
+function saveCurrentSession() {
+  if (!state.currentSessionId) return;
+  const sess = state.sessions.find(s => s.id === state.currentSessionId);
+  if (!sess) return;
+  // 从 DOM 抓取当前消息
+  sess.messages = captureMessagesFromDOM();
+  sess.sceneData = JSON.parse(JSON.stringify(state.sceneData));
+  sess.lastPlayed = Date.now();
+}
+
+function enterPlay(restoreMessages) {
+  state.currentView = 'play';
+  document.getElementById('topbar-title').textContent = '🎭 游戏中';
+  document.getElementById('home-area').style.display = 'none';
+  document.getElementById('play-area').style.display = 'flex';
+  document.getElementById('play-header').innerHTML = `
+    <button class="home-btn" onclick="goHome()">🏠 主页</button>
+    <span class="play-title">${SCENARIOS.find(s=>s.id===state.currentScenarioId)?.name||''} · ${state.investigator?.name||''}</span>
+  `;
+  // 清空聊天区
+  document.getElementById('chat-messages').innerHTML = '';
+  if (restoreMessages) {
+    const sess = state.sessions.find(s => s.id === state.currentSessionId);
+    if (sess && sess.messages.length > 0) {
+      // 渲染存档消息
+      for (const m of sess.messages) {
+        const html = m.type === 'kp' ? `<div class="msg kp"><div class="sender">🕯 守秘人</div>${nl2br(m.content)}</div>`
+                   : m.type === 'player' ? `<div class="msg player">${nl2br(m.content)}</div>`
+                   : m.type === 'dice' ? `<div class="msg dice">🎲 ${nl2br(m.content)}</div>`
+                   : m.type === 'tip' ? `<div class="msg tip"><div class="tip-label">💡 ${m.subtype||'小贴士'}</div>${nl2br(m.content)}</div>`
+                   : `<div class="msg system">${nl2br(m.content)}</div>`;
+        document.getElementById('chat-messages').innerHTML += html;
+      }
+      addMsg('system', '—— 已加载历史对话 ——');
+    } else {
+      // 新会话：触发 startScenario
+      addMsg('system', '=== 准备开始新冒险 ===');
+      addMsg('kp', `<b>${state.investigator.name}</b>，欢迎来到「${SCENARIOS.find(s=>s.id===state.currentScenarioId).name}」。输入「准备好了」开始冒险。`);
+    }
+  } else {
+    // 新会话流程
+    addMsg('system', '=== 准备开始新冒险 ===');
+    addMsg('kp', `<b>${state.investigator.name}</b>，欢迎来到「${SCENARIOS.find(s=>s.id===state.currentScenarioId).name}》。输入「准备好了」开始冒险。`);
+  }
+  updateCharSheet();
+  renderClues();
+}
+
+function captureMessagesFromDOM() {
+  // 从 addMsg 记录过的 raw 数据恢复更可靠，但目前只从 DOM 抓
+  const arr = [];
+  const els = document.querySelectorAll('#chat-messages > .msg, #chat-messages > .msg-system, #chat-messages > .msg-tip, #chat-messages > .msg-dice');
+  els.forEach(el => {
+    if (el.classList.contains('kp')) arr.push({type:'kp', content: el.innerText.replace(/^🕯 守秘人\s*/,'')});
+    else if (el.classList.contains('player')) arr.push({type:'player', content: el.innerText});
+    else if (el.classList.contains('dice')) arr.push({type:'dice', content: el.innerText.replace(/^🎲\s*/,'')});
+    else if (el.classList.contains('tip')) {
+      const label = el.querySelector('.tip-label')?.innerText || '';
+      const body = el.innerText.replace(label, '').trim();
+      arr.push({type:'tip', content: body, subtype: label.replace(/^💡\s*/,'')});
+    } else arr.push({type:'system', content: el.innerText});
+  });
+  return arr;
 }
 
 // ==================== TUTORIAL ====================
@@ -1208,7 +1505,9 @@ function createLimaiChar() {
   else if (strCon <= 204) { db = '+1D6'; build = 2; }
   else { db = '+2D6'; build = 3; }
 
+  const newId = 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
   state.investigator = {
+    _id: newId,
     ...charData,
     hp: { current: hp, max: hp },
     mp: { current: Math.floor(sanVal/5), max: Math.floor(sanVal/5) },
@@ -1340,6 +1639,7 @@ function quickGenerateChar() {
   if (sCon<=64){db='-2';build=-2;}else if(sCon<=84){db='-1';build=-1;}else if(sCon<=124){db='0';build=0;}else if(sCon<=164){db='+1D4';build=1;}else if(sCon<=204){db='+1D6';build=2;}else{db='+2D6';build=3;}
 
   state.investigator = {
+    _id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
     name, playerName:name, occ, era:'2013年', age, gender,
     residence: bg.match(/住在[^，。]+/)?.[0] || bg.match(/在[^的]+/)?.[0] || '未知',
     birthplace: bg.match(/上海|北京|广州|深圳|杭州|成都/)?.[0] || '中国',
@@ -1821,6 +2121,7 @@ function saveChar() {
   const credit = parseInt(document.getElementById('cc-credit').value) || 0;
 
   state.investigator = {
+    _id: 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
     name: document.getElementById('cc-name').value.trim() || '无名调查员',
     playerName: document.getElementById('cc-player').value.trim(),
     occ: occ,
@@ -1857,6 +2158,11 @@ function saveChar() {
   document.getElementById('char-modal').remove();
   updateCharSheet();
   autoSave();
+  // 推入 investigators
+  if (state.investigator && state.investigator._id) {
+    const idx = state.investigators.findIndex(i => i.id === state.investigator._id);
+    if (idx < 0) state.investigators.push(JSON.parse(JSON.stringify(state.investigator)));
+  }
   addMsg('system', `🎭 调查员「${state.investigator.name}」创建完成！`, 'system');
   addMsg('system', `📊 属性总评: ${rating.total}点 | ${rating.rating} | 期望值约457点`, 'system');
   showToast(`✅ 「${state.investigator.name}」创建成功！点击「开始冒险」或输入「准备好了」`);
@@ -2203,6 +2509,16 @@ function processAction(text) {
     return;
   }
 
+  // 模组分派：常暗之厢的 7 节车厢逻辑
+  if (state.currentScenarioId === 'chang-an') {
+    return runChangAn(text);
+  }
+  // 兜底：未识别模组
+  addMsg('kp', `（当前模组「${state.currentScenarioId||'未知'}」剧情尚未实现）`);
+}
+
+/* ==================== 常暗之厢 剧情 ==================== */
+function runChangAn(text) {
   const sd = state.sceneData;
   const c = state.investigator;
   const lower = text.toLowerCase();
@@ -2466,22 +2782,41 @@ function renderClues() {
     : '<div style="font-size:11px;color:var(--text-muted);padding:12px 0;text-align:center">游戏开始后线索会显示在这里</div>';
 }
 function showReadyScreen() {
-  document.getElementById('welcome-screen').style.display = 'none';
-  document.getElementById('ready-screen').style.display = '';
+  // 新流程：创建完调查员后自动弹台本选择
+  if (state.currentSessionId === null) {
+    // 新建的调查员还没绑定 session —— 跳到台本选择
+    renderHome();
+    document.getElementById('home-area').style.display = '';
+    document.getElementById('play-area').style.display = 'none';
+    // 自动弹台本选择
+    if (state.currentScenarioId) showInvestigatorSelect(state.currentScenarioId);
+    else showScenarioSelect();
+  }
 }
 function startGame() {
-  document.getElementById('ready-screen').style.display = 'none';
-  startScenario();
+  if (!state.investigator) { goHome(); return; }
+  // 兼容旧入口：直接开始当前 session 的剧情
+  if (!state.currentSessionId) {
+    pickFirstScenarioForCurrent();
+  }
+}
+function pickFirstScenarioForCurrent() {
+  // 旧"创建完直接开始" 流程：自动选常暗之厢 + 当前调查员
+  state.currentScenarioId = 'chang-an';
+  confirmPickInv(state.investigator._id);
 }
 function goHome() {
-  document.getElementById('ready-screen').style.display = 'none';
-  document.getElementById('welcome-screen').style.display = '';
+  saveCurrentSession();
+  state.currentView = 'home';
+  state.currentSessionId = null;
+  state.currentScenarioId = null;
+  document.getElementById('home-area').style.display = '';
+  document.getElementById('play-area').style.display = 'none';
   document.getElementById('chat-messages').innerHTML = '';
-  switchTab('rules');
-  updateCharSheet();
-  renderTutorialBar();
+  renderHome();
   renderClues();
   renderNPCList();
+  autoSave();
 }
 
 // ==================== API SETTINGS ====================
@@ -2906,23 +3241,50 @@ function renderNPCList() {
 
 // ==================== SAVE ====================
 function saveGame() {
+  // 把当前 investigator 写回 investigators 列表
+  if (state.investigator) {
+    const idx = state.investigators.findIndex(i => i.id === (state.investigator._id || state.investigatorId));
+    if (idx >= 0) state.investigators[idx] = JSON.parse(JSON.stringify(state.investigator));
+    else if (!state.investigator._id && !state.investigatorId) {
+      // 旧数据没id，分配一个
+      state.investigator._id = 'inv_' + Date.now();
+      state.investigators.push(JSON.parse(JSON.stringify(state.investigator)));
+    }
+  }
+  saveCurrentSession();
   autoSave();
   showToast('游戏已保存 💾');
 }
 function autoSave() {
+  // 同步当前 investigator → investigators
+  if (state.investigator) {
+    const invId = state.investigator._id || state.investigatorId;
+    if (invId) {
+      const idx = state.investigators.findIndex(i => i.id === invId);
+      if (idx >= 0) state.investigators[idx] = JSON.parse(JSON.stringify(state.investigator));
+    }
+  }
+  saveCurrentSession();
   localStorage.setItem('coc-kp-state', JSON.stringify(state));
 }
 function resetGame() {
-  if (!confirm('⚠️ 确认重置？所有游戏进度和角色数据将被清除。')) return;
+  if (!confirm('⚠️ 确认重置？所有游戏进度、角色和对话将被清除（设置保留）。')) return;
   localStorage.removeItem('coc-kp-state');
+  const keptSettings = state.settings;
   state = {
-    investigator: null, gamePhase: 'idle', clues: [], npcs: [],
+    investigators: [],
+    sessions: [],
+    currentSessionId: null,
+    currentScenarioId: null,
+    currentView: 'home',
+    investigator: null,
+    gamePhase: 'idle',
+    clues: [], npcs: [],
     tutorialStep: 0, tutorialDone: false,
     sceneData: { currentCar:1, conductorAwake:false, hasKey:false, hasCrowbar:false, hasFlashlight:false, warningsTriggered:[], monsterDistance:8, plotLock:['conductor_helper','key_location','finale_brake'], plotEvents:[] },
-    settings: state.settings
+    settings: keptSettings
   };
   goHome();
-  autoSave();
   showToast('🔄 已重置，可以开始新冒险');
 }
 function showToast(msg) {
