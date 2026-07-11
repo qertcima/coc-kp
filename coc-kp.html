@@ -552,10 +552,6 @@ body {
   <div class="logo" id="topbar-title">🕯 COC 守秘人 <span>| 主页</span></div>
   <div class="spacer"></div>
   <button class="tutorial-btn" onclick="openTutorial()">📖 教程</button>
-  <button onclick="goHome()">🏠 主页</button>
-  <button onclick="openDice()">🎲 掷骰</button>
-  <button onclick="openBackpack()">🎒 背包</button>
-  <button onclick="openCharView()">📋 角色卡</button>
   <button onclick="openSettings()">⚙ API</button>
   <button onclick="saveGame()">💾 保存</button>
 </div>
@@ -1136,21 +1132,18 @@ function captureMessagesFromDOM() {
 }
 
 // ==================== TUTORIAL ====================
-function renderTutorialBar(started) {
+function renderTutorialBar() {
   const bar = document.getElementById('tutorial-bar');
-  if (state.tutorialDone) {
-    bar.innerHTML = '<span class="t-label">✅ 新手教程已完成</span>';
-    return;
-  }
   const current = state.tutorialStep;
   bar.innerHTML = '<span class="t-label">📖 教程</span>' +
     TUTORIAL_STEPS.map((s,i) => {
       let cls = 't-step';
       if (s.done) cls += ' done';
       else if (i === current) cls += ' current';
-      else if (i > current) cls += ' locked';
-      return `<span class="${cls}" onclick="scrollToStep(${i})">${s.label}</span>`;
-    }).join('');
+      else cls += ' available';
+      return `<span class="${cls}" onclick="openTutorial(${i})">${s.label}</span>`;
+    }).join('') +
+    '<span class="t-label" style="margin-left:auto">点击任意章节查看</span>';
 }
 
 function advanceTutorial() {
@@ -1430,7 +1423,13 @@ COC的战斗与DND不同——战斗通常意味着<b>你已经失败了</b>。
   addMsg('rule', `<div class="rule-label">${c.title}</div>${c.body.replace(/\n/g,'<br>').replace(/【/g,'「').replace(/】/g,'」')}`, 'rule');
 }
 
-function openTutorial() {
+function openTutorial(stepIdx) {
+  // 直接查看某章：渲染到聊天区
+  if (typeof stepIdx === 'number') {
+    renderTutorialContent(stepIdx);
+    showToast('📖 已加载教程章节，可随时关闭');
+    return;
+  }
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.id = 'tutorial-modal';
@@ -1439,7 +1438,7 @@ function openTutorial() {
       <h3>📖 COC新手教程</h3>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
         ${TUTORIAL_STEPS.map((s,i) => `
-          <div class="rule-card" onclick="document.getElementById('tutorial-modal').remove();scrollToStep(${i})">
+          <div class="rule-card" onclick="document.getElementById('tutorial-modal').remove();renderTutorialContent(${i})">
             <div class="rc-title">${s.done?'✅':''} ${s.label}</div>
             <div class="rc-desc">${[
               '学习如何创建调查员角色',
@@ -2499,6 +2498,10 @@ function startScenario() {
   addMsg('kp', `你看向车厢门，上面贴着一张便签：「<b>只管前进吧，已经没有退路了</b>」`);
   addMsg('kp', `你的手机没有信号。你检查了一下身上的东西——还好，大部分物品还在。你站在空荡荡的车厢里，前方是未知的黑暗。\n\n<b>你要怎么做？</b>`);
   addMsg('tip', '你可以：①检查便签背面 ②搜索你所在的车厢 ③前往下一节车厢 ④检查自己的物品', '操作提示');
+  // 教程自动浮现：第2章玩法 + 骰娘指令
+  setTimeout(() => {
+    addMsg('system', '💡 提示：随时点击顶部「教程」可查看完整规则。游戏过程中如需检定，直接输入 `.r 1d100` 或 `.ra 侦查`。');
+  }, 1500);
   advanceTutorial();
 }
 
@@ -2548,6 +2551,10 @@ function runChangAn(text) {
       sd.currentCar = 2;
       sd.monsterDistance = Math.max(6, sd.monsterDistance - 1);
       advanceMonster();
+      // 教程自动浮现：D100检定
+      setTimeout(() => {
+        addMsg('system', '💡 检定提示：尝试「搜索/侦查」会触发D100检定。骰出 ≤ 技能值 = 成功，01 = 大成功，96-00 = 大失败。');
+      }, 1200);
       return;
     }
     if (lower.includes('物品') || lower.includes('手机') || lower.includes('包')) {
