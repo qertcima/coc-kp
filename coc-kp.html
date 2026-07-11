@@ -1,0 +1,2900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COC AI 守秘人 - 常暗之厢</title>
+<style>
+:root {
+  /* 克苏鲁深渊色调 — Eldritch Lovecraftian Theme */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1729;
+  --bg-tertiary: #1a2438;
+  --bg-panel: #0d1522;
+  --crimson: #8b1a1a;
+  --crimson-light: #c0392b;
+  --eldritch-green: #37f499;
+  --eldritch-teal: #04d1f9;
+  --eldritch-purple: #7081d0;
+  --eldritch-amber: #f7c67f;
+  --gold: #8a7a4a;
+  --gold-light: #c9a94e;
+  --text-primary: #cdd6f0;
+  --text-secondary: #7a8bbf;
+  --text-muted: #4a5a7a;
+  --green: #1a4a2a;
+  --green-light: #37f499;
+  --blue: #1a2a5a;
+  --blue-light: #5a8bdf;
+  --border: #1e2a4a;
+  --border-light: #2a3a5a;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top Bar */
+.topbar {
+  height: 44px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.topbar .logo { font-size: 14px; font-weight: 600; color: var(--crimson-light); letter-spacing: 0.5px; }
+.topbar .logo span { color: var(--text-muted); font-weight: 400; font-size: 11px; margin-left: 4px; }
+.topbar .spacer { flex: 1; }
+.topbar button {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.15s;
+}
+.topbar button:hover { background: var(--border-light); color: var(--text-primary); }
+.topbar .tutorial-btn { background: var(--crimson); color: var(--text-primary); border-color: var(--crimson-light); }
+.topbar .tutorial-btn:hover { background: var(--crimson-light); color: #fff; }
+
+/* Main Layout */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* Left Panel */
+.left-panel {
+  width: 260px;
+  min-width: 260px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: all 0.3s;
+}
+.left-panel.collapsed { min-width: 0; width: 0; padding: 0; border: none; }
+.panel-header {
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--crimson-light);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.char-section {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.char-section:last-child { border-bottom: none; }
+.char-section h4 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 12px;
+}
+.stat-row .label { color: var(--text-secondary); }
+.stat-row .value { color: var(--text-primary); font-weight: 500; }
+.stat-row.san .value { color: var(--crimson-light); font-weight: 600; }
+.stat-row.hp .value { color: var(--green-light); font-weight: 600; }
+
+.bar-wrap { margin: 3px 0; }
+.bar-bg { height: 6px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden; }
+.bar-fill-san { height: 100%; background: var(--crimson); border-radius: 3px; transition: width 0.5s; }
+.bar-fill-hp { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.5s; }
+.bar-fill-luck { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.5s; }
+
+.attr-mini {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3px;
+}
+.attr-box {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 6px;
+  text-align: center;
+}
+.attr-box .an { font-size: 9px; color: var(--text-muted); text-transform: uppercase; }
+.attr-box .av { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+.inv-item { font-size: 11px; padding: 2px 0; color: var(--text-secondary); }
+
+/* 背包UI */
+.backpack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.bp-slot { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 6px; font-size: 10px; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; min-height: 28px; display: flex; align-items: center; gap: 4px; }
+.bp-slot:hover { border-color: var(--eldritch-teal); background: var(--bg-secondary); }
+.bp-slot .bp-icon { font-size: 12px; opacity: 0.6; }
+.bp-slot.equipped { border-color: var(--eldritch-green); border-left: 2px solid var(--eldritch-green); }
+.bp-slot.weapon { border-color: var(--crimson-light); border-left: 2px solid var(--crimson-light); }
+
+/* 属性等级标签 */
+.attr-tier { font-size: 9px; padding: 1px 5px; border-radius: 8px; display: inline-block; font-weight: 500; letter-spacing: 0.3px; }
+.tier-average { background: #1a2a3a; color: var(--text-secondary); }
+.tier-above { background: #1a2a1a; color: var(--eldritch-green); }
+.tier-strong { background: #1a1a2a; color: var(--blue-light); }
+.tier-weak { background: #2a1a1a; color: var(--crimson-light); }
+.tier-extreme { background: #2a2010; color: var(--gold-light); }
+.tier-feeble { background: #1a0a0a; color: #666; }
+
+/* 金钱显示 */
+.wealth-display { background: var(--bg-tertiary); border: 1px solid var(--gold); border-radius: var(--radius); padding: 6px 8px; margin-bottom: 6px; font-size: 11px; }
+.wealth-display .coin { color: var(--gold-light); font-weight: 600; }
+
+/* 技能输入框可见性增强 */
+.skill-input { width:48px !important; text-align:center; background:var(--bg-secondary) !important; border:1px solid var(--border-light) !important; border-radius:var(--radius) !important; color:var(--eldritch-teal) !important; font-size:13px !important; font-weight:600 !important; padding:4px !important; }
+.skill-input:focus { border-color:var(--eldritch-green) !important; outline:none; box-shadow:0 0 6px rgba(4,209,249,0.3); }
+.skill-label { flex:1; font-size:12px !important; color:var(--text-secondary) !important; }
+.skill-base { font-size:9px !important; color:var(--text-muted) !important; }
+.skill-pct { width:32px; text-align:right; font-size:11px !important; color:var(--eldritch-amber) !important; font-weight:500; }
+
+/* Center Panel */
+.center-panel { flex: 1; display: flex; flex-direction: column; background: var(--bg-primary); min-width: 0; }
+
+/* Tutorial Bar */
+.tutorial-bar {
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tutorial-bar .t-label { font-size: 10px; color: var(--crimson-light); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.tutorial-bar .t-step {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tutorial-bar .t-step:hover { border-color: var(--crimson-light); color: var(--text-primary); }
+.tutorial-bar .t-step.done { background: var(--green); color: #fff; border-color: var(--green); }
+.tutorial-bar .t-step.current { background: var(--crimson); color: var(--text-primary); border-color: var(--crimson-light); }
+.tutorial-bar .t-step.locked { opacity: 0.4; cursor: not-allowed; }
+
+.chat-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chat-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 40px;
+}
+.chat-empty h2 { font-size: 22px; color: var(--crimson-light); margin-bottom: 6px; font-weight: 500; }
+.chat-empty p { font-size: 13px; max-width: 440px; line-height: 1.7; color: var(--text-secondary); }
+
+.msg {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  line-height: 1.7;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.msg.kp {
+  align-self: flex-start;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--crimson);
+  color: var(--text-primary);
+}
+.msg.kp .sender { color: var(--crimson-light); font-size: 10px; font-weight: 600; margin-bottom: 3px; letter-spacing: 0.3px; }
+.msg.player {
+  align-self: flex-end;
+  background: #101d14;
+  border: 1px solid #1a2e20;
+  border-right: 3px solid var(--green-light);
+  color: var(--text-primary);
+}
+.msg.system {
+  align-self: center;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-style: italic;
+  text-align: center;
+  padding: 3px 8px;
+}
+.msg.dice {
+  align-self: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--crimson);
+  border-radius: var(--radius-lg);
+  padding: 8px 16px;
+  text-align: center;
+  color: var(--gold-light);
+  font-size: 13px;
+}
+.msg.tip {
+  align-self: center;
+  background: #1a1a0c;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-lg);
+  padding: 8px 14px;
+  text-align: center;
+  color: var(--gold-light);
+  font-size: 12px;
+  border-left: 3px solid var(--gold);
+}
+.msg.tip .tip-label { color: var(--gold); font-weight: 600; margin-bottom: 2px; }
+.msg.rule {
+  align-self: stretch;
+  background: #120e1a;
+  border: 1px solid #2a2040;
+  border-radius: var(--radius-lg);
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.msg.rule .rule-label { color: #8b6fcf; font-weight: 600; margin-bottom: 2px; }
+
+/* Input Area */
+.input-area {
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+.input-area textarea {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: var(--font);
+  resize: none;
+  min-height: 38px;
+  max-height: 100px;
+  outline: none;
+}
+.input-area textarea:focus { border-color: var(--crimson); }
+.input-area textarea::placeholder { color: var(--text-muted); }
+
+.quick-bar {
+  display: flex;
+  gap: 3px;
+  padding: 4px 14px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.q-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 3px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.15s;
+}
+.q-btn:hover { background: var(--border-light); color: var(--text-primary); }
+.q-btn.dice { background: var(--crimson); color: var(--text-primary); border-color: var(--crimson-light); }
+
+.send-btn {
+  background: var(--crimson);
+  border: none;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
+  height: 38px;
+}
+.send-btn:hover { background: var(--crimson-light); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Right Panel */
+.right-panel {
+  width: 240px;
+  min-width: 240px;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.right-panel .tab-bar { display: flex; border-bottom: 1px solid var(--border); }
+.right-panel .tab-btn {
+  flex: 1; padding: 7px 0; text-align: center;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--text-muted); cursor: pointer; font-size: 11px; transition: all 0.15s;
+}
+.right-panel .tab-btn:hover { color: var(--text-secondary); }
+.right-panel .tab-btn.active { color: var(--crimson-light); border-bottom-color: var(--crimson-light); }
+.right-panel .tab-content { padding: 8px 12px; display: none; }
+.right-panel .tab-content.active { display: block; }
+
+.rule-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  margin-bottom: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.rule-card:hover { border-color: var(--crimson); }
+.rule-card .rc-title { color: var(--crimson-light); font-weight: 500; margin-bottom: 2px; font-size: 12px; }
+.rule-card .rc-desc { color: var(--text-muted); line-height: 1.5; }
+
+/* Modals */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; animation: fadeIn 0.2s;
+}
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  width: 500px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal h3 { color: var(--crimson-light); font-size: 16px; margin-bottom: 12px; }
+
+.char-form { display: flex; flex-direction: column; gap: 8px; }
+.char-form .row { display: flex; gap: 6px; }
+.char-form .row > * { flex: 1; }
+.char-form label { font-size: 10px; color: var(--text-muted); margin-bottom: 2px; display: block; }
+.char-form input, .char-form select, .char-form textarea {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-size: 12px;
+  outline: none;
+  font-family: var(--font);
+}
+.char-form input:focus, .char-form select:focus { border-color: var(--crimson); }
+.char-form textarea { min-height: 50px; resize: vertical; }
+.char-form .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+.char-form .stat-item { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 6px; text-align: center; }
+.char-form .stat-item .sn { font-size: 9px; color: var(--text-muted); }
+.char-form .stat-item input { width: 100%; text-align: center; border: none; background: transparent; color: var(--text-primary); font-size: 14px; font-weight: 600; }
+
+.modal button {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+  transition: all 0.15s;
+}
+.modal .btn-primary { background: var(--crimson); color: #fff; }
+.modal .btn-primary:hover { background: var(--crimson-light); }
+.modal .btn-secondary { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border); }
+
+/* Dice Roller */
+.dice-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 12px; }
+.dice-btn {
+  aspect-ratio: 1;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 20px; transition: all 0.15s;
+}
+.dice-btn:hover { border-color: var(--crimson); }
+.dice-btn.selected { border-color: var(--crimson); background: var(--crimson); }
+.dice-btn .dl { font-size: 9px; color: var(--text-muted); }
+
+.roll-display { text-align: center; font-size: 40px; font-weight: 700; color: var(--crimson-light); margin: 10px 0; animation: rollBounce 0.6s; }
+@keyframes rollBounce { 0%{transform:scale(0.3);opacity:0} 50%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+.roll-label { text-align: center; font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+.roll-level { text-align: center; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.roll-level.success { color: var(--green-light); }
+.roll-level.hard { color: var(--blue-light); }
+.roll-level.extreme { color: var(--gold-light); }
+.roll-level.crit { color: var(--gold); }
+.roll-level.fumble { color: var(--crimson-light); }
+.roll-level.fail { color: var(--text-muted); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+@media (max-width: 800px) {
+  .left-panel, .right-panel { display: none; }
+}
+
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-secondary); border: 1px solid var(--crimson);
+  color: var(--crimson-light); padding: 8px 20px; border-radius: 16px;
+  font-size: 12px; z-index: 200; animation: fadeIn 0.3s;
+}
+
+.loading-dots { display: inline-flex; gap: 3px; padding: 6px 0; }
+.loading-dots span {
+  width: 5px; height: 5px; background: var(--crimson); border-radius: 50%;
+  animation: dotPulse 1.4s infinite ease-in-out;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="logo">🕯 COC 守秘人 <span>| 常暗之厢</span></div>
+  <div class="spacer"></div>
+  <button class="tutorial-btn" onclick="openTutorial()">📖 COC新手教程</button>
+  <button onclick="goHome()">🏠 主页</button>
+  <button onclick="openDice()">🎲 掷骰</button>
+  <button onclick="openBackpack()">🎒 背包</button>
+  <button onclick="openCharView()">📋 角色卡</button>
+  <button onclick="openSettings()">⚙ API</button>
+  <button onclick="saveGame()">💾 保存</button>
+</div>
+
+<!-- Tutorial Bar -->
+<div class="tutorial-bar" id="tutorial-bar"></div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Left Panel — 极简化入口 -->
+  <div class="left-panel" id="left-panel">
+    <div class="char-section" style="text-align:center;padding:16px">
+      <button onclick="openCharCreate()" style="background:var(--crimson);border:none;color:#fff;padding:8px 16px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600;width:100%;margin-bottom:8px">🎭 创建调查员</button>
+      <button onclick="openBackpack()" style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-secondary);padding:6px 12px;border-radius:var(--radius);cursor:pointer;font-size:11px;width:100%;margin-bottom:4px">🎒 查看背包</button>
+      <button onclick="resetGame()" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:4px 12px;border-radius:var(--radius);cursor:pointer;font-size:10px;width:100%">🔄 新冒险（重置）</button>
+    </div>
+    <!-- 迷你摘要区：动态填充，ID与updateCharSheet保持一致 -->
+    <div id="left-summary" class="char-section" style="display:none;font-size:11px">
+      <div class="stat-row"><span class="label">姓名</span><span class="value" id="c-name">—</span></div>
+      <div class="stat-row"><span class="label">职业</span><span class="value" id="c-occ">—</span></div>
+      <div class="stat-row"><span class="label">时代/年龄/性别</span><span class="value" id="c-demo" style="font-size:11px">—</span></div>
+      <div class="stat-row"><span class="label">住地</span><span class="value" id="c-residence" style="font-size:11px">—</span></div>
+      <div style="margin-top:8px">
+        <div class="stat-row hp"><span class="label">HP</span><span class="value" id="hp-text">—/—</span></div>
+        <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill-hp" id="hp-bar" style="width:0%"></div></div></div>
+        <div class="stat-row san" style="margin-top:4px"><span class="label">SAN</span><span class="value" id="san-text">—/—</span></div>
+        <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill-san" id="san-bar" style="width:0%"></div></div></div>
+        <div class="stat-row" style="margin-top:4px"><span class="label">LUCK</span><span class="value" id="luck-text">—</span></div>
+        <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill-luck" id="luck-bar" style="width:0%"></div></div></div>
+        <div class="stat-row"><span class="label">DB</span><span class="value" id="c-db">—</span></div>
+        <div class="stat-row"><span class="label">MP</span><span class="value" id="c-mp">—</span></div>
+      </div>
+      <div style="margin-top:8px">
+        <div class="attr-mini" id="attr-grid"></div>
+      </div>
+      <div class="stat-row" style="margin-top:6px;font-size:10px;color:var(--text-muted)">📦 <span id="inv-list">—</span></div>
+      <div class="stat-row" id="wealth-display" style="display:none;font-size:10px;color:var(--gold-light)"></div>
+    </div>
+    <div id="left-empty" class="char-section" style="text-align:center;padding:20px;font-size:11px;color:var(--text-muted)">
+      ⚠ 尚未创建调查员<br><span style="font-size:10px">点击「创建调查员」开始</span>
+    </div>
+  </div>
+
+  <!-- Center -->
+  <div class="center-panel">
+    <div class="chat-area" id="chat-area">
+      <div class="chat-empty" id="welcome-screen">
+        <h2>🕯 欢迎，调查员</h2>
+        <div style="font-size:13px;color:var(--text-secondary);max-width:480px;margin:0 auto 14px;line-height:1.8">
+          <p><b>📖 常暗之厢 — 你的第一次COC冒险</b></p>
+          <p style="font-size:12px;color:var(--text-muted);margin:6px 0">
+            规则：COC 7th Edition ｜ 难易度：★☆☆☆☆ (新手向)<br>
+            时长：30-60分钟 ｜ 推荐技能：侦查·急救·话术·潜行
+          </p>
+          <p style="font-size:12px;color:var(--text-muted);margin:6px 0">
+            <b>背景</b>：2013年，你加班后搭上末班电车沉沉睡去。
+            醒来时乘客全部消失，窗外一片漆黑，电车仍在飞驰——
+            车门上贴着一张字条：「只管前进吧，已经没有退路了」。
+          </p>
+          <p style="font-size:12px;color:var(--text-muted)">
+            <b>目标</b>：在车厢间前进探索 → 找到车头驾驶室 → 拉下紧急制动闸逃出生天。
+            注意：在你身后，有什么东西正在一节一节地吞噬车厢……
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="q-btn" onclick="openQuickCreate()" style="background:var(--eldritch-green);color:#0a0e1a;font-size:12px;padding:6px 14px;font-weight:600">⚡ 智能建卡</button>
+          <button class="q-btn" onclick="openCharCreate()" style="background:var(--crimson);color:#fff;font-size:12px;padding:6px 14px">🎭 手动创建</button>
+          <button class="q-btn" onclick="createLimaiChar();" style="background:var(--crimson-light);color:#fff;font-size:12px;padding:6px 14px">🇨🇳 黎麦预设</button>
+          <button class="q-btn" onclick="openTutorial()" style="background:var(--bg-tertiary);color:var(--text-secondary);font-size:12px;padding:6px 14px;border:1px solid var(--border)">📖 教程</button>
+        </div>
+      </div>
+      <!-- 角色就绪面板 -->
+      <div class="chat-empty" id="ready-screen" style="display:none;">
+        <h2>🎭 调查员就绪</h2>
+        <div style="font-size:13px;color:var(--text-secondary);max-width:400px;margin:0 auto;line-height:1.8">
+          <p>角色已创建完成。</p>
+          <p style="font-size:12px;color:var(--text-muted)">准备好了就开始你的第一次COC冒险吧。</p>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+          <button onclick="startGame()" style="background:var(--crimson);border:none;color:#fff;padding:12px 36px;border-radius:var(--radius-lg);cursor:pointer;font-size:15px;font-weight:600;letter-spacing:1px">🚃 开始冒险</button>
+          <button onclick="openCharView()" style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-secondary);padding:10px 20px;border-radius:var(--radius-lg);cursor:pointer;font-size:12px">📋 查看角色卡</button>
+        </div>
+        <div style="margin-top:16px;font-size:11px;color:var(--text-muted)">或者直接在下方输入「准备好了」开始</div>
+      </div>
+      <div id="chat-messages"></div>
+    </div>
+
+    <div class="quick-bar" id="quick-bar">
+      <button class="q-btn" onclick="qAction('侦查')">🔍 侦查</button>
+      <button class="q-btn" onclick="qAction('聆听')">👂 聆听</button>
+      <button class="q-btn" onclick="qAction('交涉')">💬 交涉</button>
+      <button class="q-btn" onclick="qAction('潜行')">👣 潜行</button>
+      <button class="q-btn" onclick="qAction('物理')">💪 体力</button>
+      <span style="color:var(--text-muted);font-size:10px;align-self:center">|</span>
+      <button class="q-btn dice" onclick="openDice()">🎲 骰子面板</button>
+      <span style="color:var(--text-muted);font-size:10px;align-self:center">|</span>
+      <button class="q-btn" onclick="sendDiceCmd('.ra 侦查')">🎯 检定</button>
+      <button class="q-btn" onclick="sendDiceCmd('.sc')">🌀 理智</button>
+      <button class="q-btn" onclick="sendDiceCmd('.ti')">💥 疯狂</button>
+      <button class="q-btn" onclick="sendDiceCmd('.help')">📖 帮助</button>
+    </div>
+
+    <div class="input-area">
+      <textarea id="user-input" placeholder="描述行动 或 骰娘指令 .r .ra .sc .ti .help" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+      <button class="send-btn" onclick="sendMsg()" id="send-btn">行动</button>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('rules')">📖 规则</button>
+      <button class="tab-btn" onclick="switchTab('clues')">🔍 线索</button>
+      <button class="tab-btn" onclick="switchTab('npcs')">👥 角色</button>
+    </div>
+    <div class="tab-content active" id="tab-rules">
+      <div id="rules-list"></div>
+    </div>
+    <div class="tab-content" id="tab-clues">
+      <div id="clues-list" style="font-size:11px;color:var(--text-muted)">暂无线索</div>
+    </div>
+    <div class="tab-content" id="tab-npcs">
+      <div id="npc-list" style="font-size:11px;color:var(--text-muted);text-align:center;padding:12px">探索中会遇到角色…</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ==================== STATE ====================
+/* ==================== COC 7e 完整规则数据 ==================== */
+
+// 属性缩写对照（规则书 p.26）
+const ATTR_NAMES = {
+  str:'力量 STR', con:'体质 CON', siz:'体型 SIZ',
+  dex:'敏捷 DEX', app:'外貌 APP', int:'智力 INT',
+  pow:'意志 POW', edu:'教育 EDU', luc:'幸运 LUK'
+};
+const ATTR_SHORT = {
+  str:'力量', con:'体质', siz:'体型',
+  dex:'敏捷', app:'外貌', int:'智力',
+  pow:'意志', edu:'教育'
+};
+const ATTR_ABBR = {
+  str:'STR', con:'CON', siz:'SIZ', dex:'DEX',
+  app:'APP', int:'INT', pow:'POW', edu:'EDU'
+};
+
+// 完整技能表（规则书 p.44-58）
+const SKILL_LIST = [
+  {name:'会计',e:'Accounting',base:5,cat:'知识'},
+  {name:'人类学',e:'Anthropology',base:1,cat:'知识'},
+  {name:'考古学',e:'Archaeology',base:1,cat:'知识'},
+  {name:'艺术与手艺',e:'Art/Craft',base:5,cat:'技术'},
+  {name:'魅惑',e:'Charm',base:15,cat:'社交'},
+  {name:'攀爬',e:'Climb',base:20,cat:'运动'},
+  {name:'计算机使用',e:'Computer Use',base:5,cat:'技术'},
+  {name:'信用评级',e:'Credit Rating',base:0,cat:'社交'},
+  {name:'克苏鲁神话',e:'Cthulhu Mythos',base:0,cat:'知识'},
+  {name:'乔装',e:'Disguise',base:5,cat:'技术'},
+  {name:'闪避',e:'Dodge',base:0,cat:'战斗',calc:'DEX/2'},
+  {name:'驾驶',e:'Drive',base:20,cat:'技术'},
+  {name:'电气维修',e:'Electrical Repair',base:10,cat:'技术'},
+  {name:'话术',e:'Fast Talk',base:5,cat:'社交'},
+  {name:'格斗(斗殴)',e:'Fighting(Brawl)',base:25,cat:'战斗'},
+  {name:'格斗(剑)',e:'Fighting(Sword)',base:0,cat:'战斗'},
+  {name:'射击(手枪)',e:'Firearms(Handgun)',base:20,cat:'战斗'},
+  {name:'射击(步枪)',e:'Firearms(Rifle/Shotgun)',base:25,cat:'战斗'},
+  {name:'急救',e:'First Aid',base:30,cat:'医疗'},
+  {name:'历史',e:'History',base:5,cat:'知识'},
+  {name:'恐吓',e:'Intimidate',base:15,cat:'社交'},
+  {name:'跳跃',e:'Jump',base:20,cat:'运动'},
+  {name:'语言(英语)',e:'Language(English)',base:0,cat:'知识',note:'=EDU'},
+  {name:'语言(其他)',e:'Language(Other)',base:1,cat:'知识'},
+  {name:'法律',e:'Law',base:5,cat:'知识'},
+  {name:'图书馆使用',e:'Library Use',base:20,cat:'知识'},
+  {name:'聆听',e:'Listen',base:20,cat:'探索'},
+  {name:'开锁',e:'Locksmith',base:1,cat:'技术'},
+  {name:'机械维修',e:'Mechanical Repair',base:10,cat:'技术'},
+  {name:'医学',e:'Medicine',base:1,cat:'医疗'},
+  {name:'博物学',e:'Natural World',base:10,cat:'知识'},
+  {name:'导航',e:'Navigate',base:10,cat:'探索'},
+  {name:'神秘学',e:'Occult',base:5,cat:'知识'},
+  {name:'操作重型机械',e:'Op.Hvy.Machine',base:1,cat:'技术'},
+  {name:'说服',e:'Persuade',base:10,cat:'社交'},
+  {name:'精神分析',e:'Psychoanalysis',base:1,cat:'医疗'},
+  {name:'心理学',e:'Psychology',base:10,cat:'社交'},
+  {name:'骑术',e:'Ride',base:5,cat:'运动'},
+  {name:'妙手',e:'Sleight of Hand',base:10,cat:'技术'},
+  {name:'科学',e:'Science',base:1,cat:'知识'},
+  {name:'侦查',e:'Spot Hidden',base:25,cat:'探索'},
+  {name:'潜行',e:'Stealth',base:20,cat:'探索'},
+  {name:'生存',e:'Survival',base:10,cat:'探索'},
+  {name:'游泳',e:'Swim',base:20,cat:'运动'},
+  {name:'投掷',e:'Throw',base:20,cat:'战斗'},
+  {name:'追踪',e:'Track',base:10,cat:'探索'}
+];
+
+// 职业列表（规则书 p.27-41 范例职业）
+const OCCUPATIONS = [
+  { name:'会计师', e:'Accountant', pts:'EDU×4', credit:'9-20', skills:['会计','法律','图书馆使用','聆听','博物学','心理学','科学','说服'] },
+  { name:'演员', e:'Actor', pts:'EDU×4', credit:'9-20', skills:['艺术与手艺','魅惑','乔装','话术','历史','恐吓','心理学','科学'] },
+  { name:'古董商', e:'Antique Dealer', pts:'EDU×4', credit:'9-20', skills:['会计','艺术与手艺','历史','图书馆使用','博物学','神秘学','说服','心理学'] },
+  { name:'考古学家', e:'Archaeologist', pts:'EDU×4', credit:'9-20', skills:['考古学','历史','图书馆使用','博物学','科学','生存','侦查','语言(其他)'] },
+  { name:'建筑师', e:'Architect', pts:'EDU×4', credit:'9-20', skills:['会计','艺术与手艺','法律','图书馆使用','博物学','科学','侦查','心理学'] },
+  { name:'艺术家', e:'Artist', pts:'EDU×2', credit:'9-20', skills:['艺术与手艺','历史','博物学','神秘学','说服','心理学','侦查','潜行'] },
+  { name:'私家侦探', e:'Private Eye', pts:'EDU×4', credit:'9-20', skills:['艺术与手艺','法律','图书馆使用','聆听','说服','心理学','侦查','潜行'] },
+  { name:'作家', e:'Author', pts:'EDU×4', credit:'9-20', skills:['历史','图书馆使用','博物学','神秘学','心理学','说服','侦查','语言(其他)'] },
+  { name:'酒保', e:'Bartender', pts:'EDU×2', credit:'9-20', skills:['会计','魅惑','格斗(斗殴)','聆听','博物学','心理学','潜行','话术'] },
+  { name:'猎人', e:'Bounty Hunter', pts:'EDU×2', credit:'9-20', skills:['格斗(斗殴)','射击(步枪)','聆听','博物学','导航','生存','追踪','潜行'] },
+  { name:'牧师', e:'Clergy', pts:'EDU×4', credit:'9-20', skills:['会计','历史','图书馆使用','聆听','神秘学','说服','心理学','语言(其他)'] },
+  { name:'记者', e:'Journalist', pts:'EDU×4', credit:'9-20', skills:['艺术与手艺','历史','图书馆使用','聆听','心理学','说服','侦查','语言(其他)'] },
+  { name:'医生', e:'Doctor', pts:'EDU×4', credit:'9-30', skills:['医学','急救','心理学','图书馆使用','科学','博物学','精神分析','语言(其他)'] },
+  { name:'工程师', e:'Engineer', pts:'EDU×4', credit:'9-20', skills:['电气维修','机械维修','计算机使用','驾驶','图书馆使用','科学','操作重型机械','导航'] },
+  { name:'艺人/流浪汉', e:'Entertainer', pts:'EDU×2', credit:'9-20', skills:['艺术与手艺','魅惑','乔装','话术','跳跃','聆听','心理学','潜行'] },
+  { name:'农民/牧场主', e:'Farmer', pts:'EDU×2', credit:'9-20', skills:['博物学','驾驶','电气维修','机械维修','骑术','生存','投掷','追踪'] },
+  { name:'联邦探员', e:'Fed', pts:'EDU×4', credit:'9-20', skills:['法律','图书馆使用','心理学','射击(手枪)','侦查','话术','潜行','追踪'] },
+  { name:'帮派成员', e:'Gangster', pts:'EDU×2', credit:'9-20', skills:['魅惑','格斗(斗殴)','射击(手枪)','恐吓','法律','聆听','潜行','心理学'] },
+  { name:'黑客', e:'Hacker', pts:'EDU×4', credit:'9-20', skills:['计算机使用','电气维修','电子学','图书馆使用','数学','科学','侦查','语言(其他)'] },
+  { name:'警官', e:'Police Officer', pts:'EDU×4', credit:'9-20', skills:['格斗(斗殴)','射击(手枪)','急救','法律','聆听','心理学','侦查','驾驶'] },
+  { name:'教授', e:'Professor', pts:'EDU×4', credit:'9-30', skills:['图书馆使用','历史','心理学','科学','说服','语言(其他)','侦查','博物学'] },
+  { name:'律师', e:'Lawyer', pts:'EDU×4', credit:'9-30', skills:['法律','会计','心理学','图书馆使用','话术','历史','说服','侦查'] },
+  { name:'图书馆员', e:'Librarian', pts:'EDU×4', credit:'9-20', skills:['图书馆使用','会计','计算机使用','历史','语言(其他)','心理学','博物学','侦查'] },
+  { name:'军人', e:'Military', pts:'EDU×4', credit:'9-20', skills:['格斗(斗殴)','射击(步枪)','急救','攀爬','潜行','生存','导航','跳跃'] },
+  { name:'音乐家', e:'Musician', pts:'EDU×2', credit:'9-20', skills:['艺术与手艺','魅惑','攀爬','聆听','心理学','潜行','话术','乔装'] },
+  { name:'护士', e:'Nurse', pts:'EDU×4', credit:'9-20', skills:['急救','医学','精神分析','心理学','科学','聆听','魅惑','潜行'] },
+  { name:'摄影师', e:'Photographer', pts:'EDU×4', credit:'9-20', skills:['艺术与手艺','历史','图书馆使用','聆听','博物学','心理学','侦查','潜行'] },
+  { name:'侦探', e:'Detective', pts:'EDU×4', credit:'9-20', skills:['法律','图书馆使用','心理学','射击(手枪)','话术','侦查','潜行','格斗(斗殴)'] },
+  { name:'心理医生', e:'Psychiatrist', pts:'EDU×4', credit:'9-30', skills:['医学','精神分析','心理学','图书馆使用','语言(其他)','科学','话术','魅惑'] },
+  { name:'研究员', e:'Researcher', pts:'EDU×4', credit:'9-20', skills:['图书馆使用','历史','科学','语言(其他)','心理学','侦查','计算机使用','博物学'] },
+  { name:'海员', e:'Sailor', pts:'EDU×2', credit:'9-20', skills:['格斗(斗殴)','射击(步枪)','急救','攀爬','机械维修','导航','游泳','投掷'] },
+  { name:'科学家', e:'Scientist', pts:'EDU×4', credit:'9-20', skills:['图书馆使用','科学','计算机使用','语言(其他)','心理学','侦查','电气维修','博物学'] },
+  { name:'秘书', e:'Secretary', pts:'EDU×2', credit:'9-20', skills:['会计','计算机使用','法律','图书馆使用','心理学','话术','魅惑','聆听'] },
+  { name:'小偷', e:'Thief', pts:'EDU×2', credit:'9-20', skills:['攀爬','开锁','妙手','潜行','侦查','聆听','格斗(斗殴)','射击(手枪)'] },
+  { name:'学生', e:'Student', pts:'EDU×2', credit:'9-20', skills:['图书馆使用','语言(其他)','科学','历史','心理学','计算机使用','聆听','侦查'] },
+  { name:'技师', e:'Technician', pts:'EDU×4', credit:'9-20', skills:['电气维修','机械维修','计算机使用','驾驶','科学','操作重型机械','导航','侦查'] },
+  { name:'部落成员', e:'Tribal Member', pts:'EDU×2', credit:'9-20', skills:['博物学','生存','追踪','潜行','攀爬','游泳','投掷','聆听'] },
+  { name:'兽医', e:'Veterinarian', pts:'EDU×4', credit:'9-20', skills:['医学','急救','博物学','科学','心理学','骑术','话术','侦查'] },
+  { name:'服务员', e:'Waiter/Waitress', pts:'EDU×2', credit:'9-20', skills:['会计','魅惑','聆听','攀爬','心理学','潜行','话术','妙手'] },
+  { name:'工人', e:'Worker', pts:'EDU×2', credit:'9-20', skills:['攀爬','电气维修','机械维修','操作重型机械','驾驶','博物学','投掷','跳跃'] }
+];
+
+// 缩写字典（面向新手的全量解释）
+const ABBR_DICT = {
+  'STR':'Strength，力量。影响近战伤害、攀爬、举重等',
+  'CON':'Constitution，体质。影响HP和耐力',
+  'SIZ':'Size，体型。影响HP和负重',
+  'DEX':'Dexterity，敏捷。影响闪避、潜行、驾驶等',
+  'APP':'Appearance，外貌。影响社交时的第一印象',
+  'INT':'Intelligence，智力。影响灵感、推理和兴趣技能点数',
+  'POW':'Power，意志。影响SAN（理智）和MP（魔法值）',
+  'EDU':'Education，教育。影响知识类技能和职业技能点数',
+  'LUK':'Luck，幸运。关键时刻的运气检定',
+  'HP':'Hit Points，生命值。归零时濒死',
+  'MP':'Magic Points，魔法值。使用法术消耗',
+  'SAN':'Sanity，理智值。COC的核心——面对恐怖能否保持理智',
+  'DB':'Damage Bonus，伤害加值。近战额外伤害',
+  'MOV':'Move，移动力。每轮可移动的距离',
+  'D100':'百分骰，投出1-100的数字。COC所有检定都用它',
+  'KP':'Keeper，守秘人。也就是游戏主持人（我）',
+  'PL':'Player，玩家。就是你',
+  'PC':'Player Character，玩家角色。你的调查员',
+  'NPC':'Non-Player Character，非玩家角色。由KP控制',
+  'SC':'Sanity Check，理智检定。面对恐怖时判定SAN损失',
+  'EDU×4':'教育值乘以4，用于计算职业技能总点数',
+  'INT×2':'智力值乘以2，用于计算兴趣技能总点数',
+  'CR':'Credit Rating，信用评级。影响你的财富和社会地位',
+  '1D3':'投1个3面骰（实际是1个6面骰÷2），结果1-3',
+  '1D6':'投1个6面骰，结果1-6',
+  '1D10':'投1个10面骰，结果1-10',
+  '3D6':'投3个6面骰，结果3-18，再×5得到15-90的属性值'
+};
+
+let state = {
+  investigator: null,
+  gamePhase: 'idle',
+  clues: [],
+  npcs: [],        // NPC registry: {id, name, age, gender, appearance, notes, info, firstSeen, relation}
+  tutorialStep: 0,
+  tutorialDone: false,
+  sceneData: {
+    currentCar: 1, conductorAwake: false, hasKey: false,
+    hasCrowbar: false, hasFlashlight: false,
+    warningsTriggered: [], monsterDistance: 8,
+    plotLock: ['conductor_helper', 'key_location', 'finale_brake'],  // 关键剧情节点不可修改
+    plotEvents: []   // 已触发的关键事件
+  },
+  settings: {
+    apiEndpoint: '',
+    apiKey: '',
+    model: '',
+    apiEnabled: false
+  }
+};
+
+const TUTORIAL_STEPS = [
+  { id:0, label:'角色创建', done:false },
+  { id:1, label:'如何行动', done:false },
+  { id:2, label:'技能检定', done:false },
+  { id:3, label:'理智检定', done:false },
+  { id:4, label:'探索与线索', done:false },
+  { id:5, label:'开始冒险', done:false }
+];
+
+function init() {
+  renderRules();
+  const saved = localStorage.getItem('coc-kp-state');
+  if (saved) {
+    try {
+      const p = JSON.parse(saved);
+      state = { ...state, ...p };
+      if (state.investigator) updateCharSheet();
+      if (state.tutorialDone) renderTutorialBar(true);
+      else renderTutorialBar();
+      renderClues();
+    } catch(e) {}
+  }
+  renderTutorialBar();
+  renderRules();
+}
+
+// ==================== TUTORIAL ====================
+function renderTutorialBar(started) {
+  const bar = document.getElementById('tutorial-bar');
+  if (state.tutorialDone) {
+    bar.innerHTML = '<span class="t-label">✅ 新手教程已完成</span>';
+    return;
+  }
+  const current = state.tutorialStep;
+  bar.innerHTML = '<span class="t-label">📖 教程</span>' +
+    TUTORIAL_STEPS.map((s,i) => {
+      let cls = 't-step';
+      if (s.done) cls += ' done';
+      else if (i === current) cls += ' current';
+      else if (i > current) cls += ' locked';
+      return `<span class="${cls}" onclick="scrollToStep(${i})">${s.label}</span>`;
+    }).join('');
+}
+
+function advanceTutorial() {
+  if (state.tutorialDone) return;
+  TUTORIAL_STEPS[state.tutorialStep].done = true;
+  state.tutorialStep++;
+  if (state.tutorialStep >= TUTORIAL_STEPS.length) {
+    state.tutorialDone = true;
+    addMsg('system', '✅ 新手教程全部完成！你已经了解了COC的基础玩法。准备好开始冒险了吗？点击「开始冒险」或直接描述你的行动。', 'system');
+    renderTutorialBar();
+    autoSave();
+    return;
+  }
+  renderTutorialBar();
+  autoSave();
+  renderTutorialContent(state.tutorialStep);
+}
+
+function scrollToStep(step) {
+  if (step <= state.tutorialStep || TUTORIAL_STEPS[step].done) {
+    renderTutorialContent(step);
+  }
+}
+
+function renderTutorialContent(step) {
+  const contents = {
+    0: { title: '🎭 第一步：创建调查员角色（规则书第3章）',
+      body: `在COC中，你扮演的不是英雄，而是**普通人**——调查员（Investigator）。
+
+<b>📖 全量缩写词典（规则书 p.26）</b>
+
+<b>【八项属性 Characteristics】</b>
+｜缩写｜英文全称｜中文｜投骰公式｜合法范围｜影响｜
+｜:--｜:--｜:--｜:--｜:--｜:--｜
+｜STR｜Strength｜力量｜3D6×5｜15-90｜近战伤害、攀爬、举重｜
+｜CON｜Constitution｜体质｜3D6×5｜15-90｜HP上限、耐力、中毒抵抗｜
+｜SIZ｜Size｜体型｜(2D6+6)×5｜40-90｜HP上限、负重、体格｜
+｜DEX｜Dexterity｜敏捷｜3D6×5｜15-90｜闪避、潜行、先攻｜
+｜APP｜Appearance｜外貌｜3D6×5｜15-90｜第一印象、社交｜
+｜INT｜Intelligence｜智力｜(2D6+6)×5｜40-90｜灵感、推理、兴趣技能点｜
+｜POW｜Power｜意志｜3D6×5｜15-90｜SAN上限、MP上限｜
+｜EDU｜Education｜教育｜(2D6+6)×5｜40-90｜知识范围、职业技能点｜
+
+<b>【衍生值 Derived Attributes】</b>
+- <b>HP</b> (Hit Points / 生命值) = (CON+SIZ)÷10，<b>向下取整</b>（官方规则书p.7）。归零时濒死昏迷
+- <b>SAN</b> (Sanity / 理智值) = POW。面对超自然恐怖时进行理智检定
+- <b>MP</b> (Magic Points / 魔法值) = POW÷5。使用法术消耗
+- <b>LUK</b> (Luck / 幸运) = 3D6×5。KP可要求幸运检定决定巧合事件
+- <b>DB</b> (Damage Bonus / 伤害加值) = 查表（官方规则书p.8）：STR+SIZ 2-64→-2, 65-84→-1, 85-124→0, 125-164→+1D4, 165-204→+1D6
+- <b>BUILD</b> (体格) = 与DB同步，用于冲撞等判定
+- <b>MOV</b> (Move / 移动力) = 默认8，年龄或属性影响下调
+
+<b>【术语 Glossary】</b>
+- <b>KP</b> (Keeper of Arcane Lore / 守秘人) = 游戏主持人，负责描述世界、扮演NPC、裁定规则。就是我
+- <b>PL</b> (Player / 玩家) = 你
+- <b>PC</b> (Player Character / 玩家角色) = 你扮演的调查员
+- <b>NPC</b> (Non-Player Character / 非玩家角色) = 由KP控制的角色
+- <b>SC</b> (Sanity Check / 理智检定) = 面对恐怖时投D100判定SAN是否损失
+- <b>D100</b> = 百分骰，投出1-100的随机数。COC"所有"检定都用它
+- <b>CR</b> (Credit Rating / 信用评级) = 一项技能，决定你的社会地位和财富
+- <b>1D3/1D6/1D10</b> = 投1个X面骰。1D6=1-6，1D3=1D6÷2
+
+<b>🎲 创建角色完整流程（规则书第3章）</b>
+
+<b>【属性生成有两种官方方法】</b>
+<b>方法A：入门规则书分配法</b>（新手推荐）— 将40/50/50/50/60/60/70/80分配到8项属性
+<b>方法B：完整规则书骰点法</b>（本系统使用）— STR/CON/DEX/APP/POW用3D6×5(15-90)，SIZ/INT/EDU用(2D6+6)×5(40-90)
+
+① 填写调查员信息（姓名、职业、时代、年龄、性别、住地等）
+② 投骰决定8项属性（点击「随机投骰全部」，使用方法B）
+③ 选择职业→系统自动计算职业技能点数（EDU×4或EDU×2）
+④ 分配职业技能点（仅限本职技能）
+⑤ 分配兴趣技能点（INT×2）可加到任何技能
+⑥ 计算衍生值：
+  - HP = (CON+SIZ)÷10 向下取整
+  - SAN = POW
+  - MP = POW÷5
+  - LUK = 3D6×5（独立投骰！）
+  - DB/Build = 查表(STR+SIZ)
+  - MOV = 8
+⑦ 根据信用评级决定初始现金(CR×2)和资产(CR×10)
+⑧ 选择随身物品和武器
+⑨ 撰写背景故事
+⑩ 合规检查通过后保存
+
+<b>✅ 系统会自动校验每项属性是否在合法范围内，不符合规则书的属性会阻止保存。</b>
+
+👉 点击左侧「创建调查员」，现在开始车卡！` },
+    1: { title: '💬 第二步：游戏流程与行动规则（规则书第4章）',
+      body: `COC的玩法流程很简单，核心是**你说→我听→投骰→推进**的循环。
+
+<b>【基本回合流程】</b>
+1. <b>KP描述场景</b> — 我告诉你你看到了什么、听到了什么、周围的环境
+2. <b>你描述行动</b> — 你说"我想做什么"，越具体越好
+3. <b>KP要求检定</b> — 如果行动结果不确定，我会让你投相应的技能
+4. <b>你投D100</b> — 点击🎲按钮或直接告诉我"我要投侦查"
+5. <b>KP判定结果</b> — 我根据你的投骰结果描述剧情走向
+
+<b>【行动原则】</b>
+- 你可以尝试<b>任何事</b>，但成功与否取决于技能值和骰运
+- <b>失败≠死路</b>——可能只是换了种方式推进，或者付出更大代价
+- <b>描述越具体，回应越精彩</b>——"我检查房间" vs "我掀开地毯看看下面有没有东西"
+- KP永远不会替你的角色做决定——你永远有选择权
+
+<b>【常用技能速查】</b>
+要搜索线索？ → <b>侦查</b>(25%) — 发现隐藏物品、细节
+要听动静？ → <b>聆听</b>(20%) — 察觉远处声响、窃窃私语
+要悄悄移动？ → <b>潜行</b>(20%) — 不被发现地行动
+要说服NPC？ → <b>话术</b>(5%) 或 <b>说服</b>(10%) — 套取信息或改变对方立场
+要查找资料？ → <b>图书馆使用</b>(20%) — 在档案图书中找到关键信息
+要看穿谎言？ → <b>心理学</b>(10%) — 判断对方是否在说谎
+要战斗？ → <b>格斗(斗殴)</b>(25%) 或 <b>射击</b>(20%/25%) — 攻击敌人
+
+<b>【示例】</b>
+你 > "我想仔细检查一下这个房间，看看有没有被藏起来的东西"
+我 > "好的，请进行侦查检定（你的人物侦查是50%）"
+你 > （投出35→≤50→成功）
+我 > "你注意到书架的第三层有一本书的摆放角度不太对劲，像是被人动过..."
+
+很简单吧？你现在就可以试试——随便说一句话，我就接下去。` },
+    2: { title: '🎲 第三步：技能检定与成功等级（规则书第4章 p.44-58）',
+      body: `COC<u>所有</u>不确定的行动都用<b>D100百分骰</b>进行检定。
+
+<b>【如何检定】</b>
+投出一个1-100的数字，与对应的技能值比较：
+- 投出数字 <b>≤</b> 技能值 → 检定成功
+- 投出数字 <b>></b> 技能值 → 检定失败
+
+<b>【五级成功等级（规则书 p.44）】</b>
+｜D100结果｜等级｜效果｜
+｜:--:｜:--｜:--｜
+｜<b>01</b>｜🔥 大成功 (Critical)｜效果非凡，远超预期｜
+｜<b>≤技能值的1/5</b>｜💫 极难成功 (Extreme)｜非常出色，获得最大收益｜
+｜<b>≤技能值的1/2</b>｜⭐ 困难成功 (Hard)｜高于普通水准｜
+｜<b>≤技能值</b>｜✅ 常规成功 (Regular)｜正常完成目标｜
+｜<b>>技能值</b>｜❌ 失败 (Fail)｜未达成目标，但可再接再厉｜
+｜<b>96-00</b><br>(技能<50时96-00)｜💀 大失败 (Fumble)｜糟糕！事情变得更糟了｜
+
+<b>【示例】你的「侦查」是60%】</b>
+- 投出 <b>01</b> → 🔥 大成功！你发现了暗格中的秘密日记，还找到了双层底下的证据
+- 投出 <b>08</b> (≤60÷5=12) → 💫 极难成功！你发现地毯下的暗门，还注意到门把上有指纹
+- 投出 <b>22</b> (≤60÷2=30) → ⭐ 困难成功！你发现了地毯下的暗门
+- 投出 <b>50</b> (≤60) → ✅ 成功！你注意到地毯有一块不太平整
+- 投出 <b>75</b> (>60) → ❌ 失败！你环顾了一圈，没发现什么异常
+- 投出 <b>98</b> (>96) → 💀 大失败！你不仅没发现任何东西，还不小心打翻了书架上的花瓶！
+
+<b>【奖励骰与惩罚骰（规则书 p.47）】</b>
+有利条件 → KP给予<b>奖励骰</b>：多投一个十位数取最佳
+不利条件 → KP给予<b>惩罚骰</b>：多投一个十位数取最差
+
+<b>【孤注一掷（规则书 p.48）】</b>
+失败后可以<b>孤注一掷</b>——更冒险的第二次尝试。
+但代价更高：成功概率不变，大失败概率翻倍。
+⚠️ 战斗和社交中不能孤注一掷。
+
+点击界面底部的🎲按钮或快捷行动，随时进行技能检定。` },
+    3: { title: '😱 第四步：理智检定与疯狂（规则书第7章 p.152-168）',
+      body: `这是COC最核心、最独特的机制——面对不可名状的恐怖，你的精神能承受多少？
+
+<b>【何时触发理智检定】</b>
+规则书规定以下情况需要进行SAN Check：
+- <b>目击怪物</b>——首次看到超自然生物（损失1/1D6到1D10/1D100不等）
+- <b>发现恐怖真相</b>——揭开令人崩溃的秘密
+- <b>经历极度创伤</b>——目睹同伴惨死、发现被肢解的尸体等
+- <b>使用禁忌法术</b>——阅读或施放克苏鲁神话法术
+- <b>特定模组事件</b>——模组中设定的SC触发点
+
+<b>【理智检定流程】</b>
+① 投<b>D100</b>，目标值 = 你<b>当前</b>的SAN值（不是最大值！）
+② 如果投出<b>≤当前SAN</b> → 检定成功，损失较少SAN
+在规则书中通常写为 "SAN 0/1D6"，意为成功损失0，失败损失1D6
+③ 如果投出<b>>当前SAN</b> → 检定失败，损失更多SAN
+
+<b>【后果：临时疯狂（规则书 p.16-17）】</b>
+如果<b>单次损失≥5点SAN</b>，调查员必须进行一次<b>智力(INT)检定</b>：
+- <b>INT检定成功</b>（≤INT）→ 调查员完全理解了所见之物，陷入<b>临时疯狂</b>，持续<b>1D10小时</b>
+- <b>INT检定失败</b>（>INT）→ 心智自我封闭，暂时保持清醒
+
+陷入临时疯狂时，需投<b>1D10</b>查<b>疯狂发作表</b>决定症状：
+1.失忆 2.心身残疾(盲/聋/瘫) 3.暴力倾向 4.偏执妄想
+5.人际依赖 6.昏厥 7.惊慌逃窜 8.歇斯底里 9.恐惧症 10.躁狂症
+（每种症状持续<b>1D10轮</b>，并在发作期间所有行动承受惩罚骰）
+
+<b>【长期后果】</b>
+- <b>不定期疯狂</b>：如果24小时内损失了当前SAN值的20%以上→可能进入不定期疯狂
+- <b>永久疯狂</b>：SAN降至0→角色无法继续扮演
+- <b>SAN上限下降</b>：每获得1点克苏鲁神话技能，SAN永久上限减少1点
+
+<b>【如何恢复SAN】</b>
+- <b>精神分析</b>(Psychoanalysis) — 需要专业心理医生，每月恢复1D3+1
+- <b>成功克服挑战</b> — KP可奖励1D6 SAN作为阶段性成就
+- <b>退出冒险</b> — 回到日常生活，每月自然恢复
+- <b>药物和酒精</b> — 暂时缓解，不能根治（还可能成瘾）
+
+记住：SAN是COC最重要的资源。保护好你的理智。` },
+    4: { title: '🔍 第五步：调查、战斗与技能运用（规则书第4-6章）',
+      body: `COC的核心是<b>调查</b>而非战斗。真相就在那里——但找到它需要方法。
+
+<b>【调查技巧】</b>
+<b>侦查</b>(基础25%) — 用眼睛观察。检查房间、寻找线索、发现隐藏物品
+- 失败时：或许没发现，但可以换个角度再试
+- 大成功时：发现所有细节，甚至额外收获
+
+<b>聆听</b>(基础20%) — 用耳朵感知。偷听对话、察觉远处动静
+- 极难成功：你能听出对方呼吸节奏的变化
+
+<b>图书馆使用</b>(基础20%) — 查找资料。在档案馆、书房、电脑中搜索
+- 这是COC中最常用的知识类技能
+
+<b>话术</b>(基础5%) vs <b>说服</b>(基础10%) vs <b>魅惑</b>(基础15%)
+- 话术：快速说谎或即兴应对
+- 说服：花时间理性辩论，改变对方立场
+- 魅惑：利用外表和魅力，让对方产生好感
+
+<b>心理学</b>(基础10%) — 读人。判断NPC是否在说谎，或察觉其情绪
+
+<b>【战斗系统（规则书第6章 p.104-136）】</b>
+COC的战斗与DND不同——战斗通常意味着<b>你已经失败了</b>。
+- 战斗中每个参与者每轮行动一次
+- <b>闪避</b>=DEX÷2（不是50%！），可以尝试闪避攻击
+- 先投<b>斗殴</b>或<b>射击</b>检定命中，再投<b>伤害</b>
+- 命中成功时：造成武器伤害+DB（近战才有）
+- 射击武器有<b>故障值</b>：投出≥该值时武器卡壳/损坏
+
+<b>【受伤与治疗（规则书 p.120）】</b>
+- HP损失过半 → <b>重伤</b>状态，行动受限
+- HP归零 → <b>濒死</b>，每轮继续损失HP直到死亡或得到急救
+- <b>急救</b>(基础30%) — 恢复1HP，战斗中只能尝试一次
+- <b>医学</b>(基础1%) — 恢复1D3HP，需在医院环境中进行
+
+<b>【核心原则：失败≠死路】</b>
+在COC中，检定失败不意味着游戏结束——它只是让故事朝着不同的方向发展。侦查失败不代表你找不到线索，可能是你需要用另一种方式。这叫做<b>"线索永远不会被一个检定拦住"</b>（规则书 p.45）。
+
+失败创造出更有趣的故事。拥抱它。` },
+    5: { title: '🚃 第六步：常暗之厢——你的第一次冒险',
+      body: `<b>模组信息</b>
+规则：COC 7th Edition
+难易度：1/5（新手向）
+推荐人数：1-2人（你独自行动）
+预计时长：30-60分钟
+推荐技能：侦查、急救、话术、潜行
+
+<b>背景（规则书第3章：调查员导入）</b>
+2013年的某天，你加班到很晚，拖着疲惫的身躯赶上了今天的<b>末班电车</b>。
+车厢里稀稀落落坐了几个乘客，你找了个座位坐下。
+太累了。眼皮越来越沉，你陷入了沉睡...
+
+不知过了多久——
+你猛然惊醒。
+
+车厢里<b>空无一人</b>。所有的乘客都消失了。窗外不是熟悉的街灯，而是<b>一片浓稠的黑暗</b>。电车仍在飞驰——但你清楚意识到，按时间计算早就该到终点站了。
+
+你检查手机——<b>没有信号</b>。
+
+车厢门上贴着一张<b>便签</b>：
+「<i>只管前进吧，已经没有退路了</i>」
+
+<b>你的目标</b>
+你需要在这趟诡异的末班电车中探索，找到通往<b>车头驾驶室</b>的路，拉下<b>紧急制动闸</b>停车，然后逃出去。
+但在你身后，有什么东西正在一节一节地吞噬车厢...
+
+<b>准备开始</b>
+✅ 创建好你的调查员（属性/技能/装备全部填写完整）
+✅ 通过合规检查（系统会自动验证）
+✅ 了解基础规则（D100/SAN/侦查）
+✅ 告诉我「准备好了」
+
+<b>记住三个原则：</b>
+1. <b>说你想做什么</b>——我会告诉你怎么判定
+2. <b>失败不是终点</b>——只是故事换了个方向
+3. <b>保持理智</b>——SAN是你最重要的资源
+
+🕯️ 祝你好运，调查员。但愿你能看见黎明。` }
+  };
+  const c = contents[step];
+  if (!c) return;
+  addMsg('rule', `<div class="rule-label">${c.title}</div>${c.body.replace(/\n/g,'<br>').replace(/【/g,'「').replace(/】/g,'」')}`, 'rule');
+}
+
+function openTutorial() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'tutorial-modal';
+  overlay.innerHTML = `
+    <div class="modal" style="width:560px">
+      <h3>📖 COC新手教程</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        ${TUTORIAL_STEPS.map((s,i) => `
+          <div class="rule-card" onclick="document.getElementById('tutorial-modal').remove();scrollToStep(${i})">
+            <div class="rc-title">${s.done?'✅':''} ${s.label}</div>
+            <div class="rc-desc">${[
+              '学习如何创建调查员角色',
+              '了解COC的基本玩法流程',
+              '掌握D100百分骰系统与成功等级',
+              '理解理智值（SAN）与疯狂机制',
+              '学会收集线索和调查技巧',
+              '了解常暗之厢的背景与目标'
+            ][i]}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn-secondary" onclick="document.getElementById('tutorial-modal').remove()">关闭</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if (e.target===overlay) overlay.remove(); };
+}
+
+// ==================== 黎麦一键生成 ====================
+function createLimaiChar() {
+  // 黎麦 — 在日中国留学生，兵击短棍练习者
+  // 场景适配：常暗之厢（2013年·日本·末班电车）
+  const charData = {
+    name: '黎麦',
+    playerName: '黎麦',
+    occ: '学生',
+    era: '2013年',
+    age: '19',
+    gender: '男',
+    residence: '日本·东京·世田谷区',
+    birthplace: '中国·上海',
+    attrs: { str:65, con:60, siz:55, dex:75, app:50, int:65, pow:60, edu:60 },
+    skills: {
+      '格斗(斗殴)': 70, '闪避': 60, '侦查': 55, '潜行': 50,
+      '图书馆使用': 50, '聆听': 45, '急救': 40, '话术': 40,
+      '攀爬': 40, '心理学': 40, '语言(其他)': 60, '投掷': 35
+    },
+    credit: 15,
+    inventory: ['手机(iPhone 5)', '钱包(学生证+Suica)', '钥匙串', '伸缩短棍(背包侧袋)', '充电宝', '居合道护具包(换洗衣物)', '便利店饭团包装'],
+    appearance: '身高176cm，体型匀称。黑色短发，眼神沉稳。穿黑色运动夹克+深色牛仔裤，背一个旧的双肩运动包。包侧面露出黑色金属伸缩短棍的末端。右手食指有练习居合时留下的老茧。',
+    beliefs: '「该做的事就去做，不该做的事要想清楚再做。」母亲从小教的，他一直记着。',
+    motto: '"行吧"',
+    bg: `黎麦，上海人，19岁。高二结束后被送到东京留学，现在就读于东京一所私立大学的工商管理专业。
+
+从小好动不安分，初中被送去学短棍格斗，没想到一练就练了六年。到日本后加入大学的居合道同好会，每周二四晚上训练。
+
+2013年冬天的这个晚上，他照常参加了居合道的夜间练习，练完在新宿站转车时买了饭团，坐上了开往世田谷方向的末班电车。车厢里没几个人，他找了个座位坐下，塞上耳机打算眯一会儿再醒——反正终点站离住处只差一个公交站。
+
+他睡着了。
+
+不知过了多久，他醒了。
+
+车厢空了。窗外一片漆黑。电车仍在飞驰。`,
+    connections: '母亲（上海，每晚微信报平安） | 东京世田谷区的小公寓（月租6.5万日元） | 祖传的银质印章戒指（爷爷给的） | 居合道道场的木刀(留在道场没带回来)'
+  };
+  // 保存到state
+  const hp = Math.floor((charData.attrs.con + charData.attrs.siz) / 10);
+  const sanVal = charData.attrs.pow;
+  const strCon = charData.attrs.str + charData.attrs.siz;
+  let db = '0', build = 0;
+  if (strCon <= 64) { db = '-2'; build = -2; }
+  else if (strCon <= 84) { db = '-1'; build = -1; }
+  else if (strCon <= 124) { db = '0'; build = 0; }
+  else if (strCon <= 164) { db = '+1D4'; build = 1; }
+  else if (strCon <= 204) { db = '+1D6'; build = 2; }
+  else { db = '+2D6'; build = 3; }
+
+  state.investigator = {
+    ...charData,
+    hp: { current: hp, max: hp },
+    mp: { current: Math.floor(sanVal/5), max: Math.floor(sanVal/5) },
+    san: { current: sanVal, max: sanVal, init: sanVal },
+    luck: { current: roll3d6x5(), max: roll3d6x5() },
+    db: db, build: build, mov: 8,
+    credit: 15,
+    skillPoints: 60 * 4 + 65 * 2,
+    weapons: [{name:'伸缩短棍', skill:'格斗(斗殴)', damage:'1D6+DB', range:'近战', note:'随身携带，金属制，可伸缩'}],
+    notes: '今晚练完居合道在末班车上睡着了',
+    _meta: {
+      totalPoints: Object.values(charData.attrs).reduce((a,b)=>a+b,0),
+      rating: '标准调查员 ✅',
+      createdAt: new Date().toISOString(),
+      version: 'COC 7e',
+      scenarioNote: '常暗之厢 — 2013年冬·日本·末班电车'
+    }
+  };
+  updateCharSheet();
+  autoSave();
+  addMsg('system', `🎭 调查员「黎麦」已就位！`, 'system');
+  addMsg('system', `📊 属性总评: ${Object.values(charData.attrs).reduce((a,b)=>a+b)}点 | HP:${hp} SAN:${sanVal} DB:${db} | 2013·东京`, 'system');
+  addMsg('kp', `<i>${charData.bg}</i>`);
+  addMsg('tip', `黎麦今晚刚从居合道训练回来，伸缩短棍在背包侧袋里，随取随用。手机是iPhone 5——2013年款，没有信号。`, '角色导入');
+  showToast('✅ 黎麦已就位！点击「开始冒险」或输入「准备好了」');
+  showReadyScreen();
+}
+
+/* ========== 智能快速建卡 ========== */
+function openQuickCreate() {
+  const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'quick-char-modal';
+  overlay.innerHTML = `
+    <div class="modal" style="width:520px">
+      <h3>⚡ 智能建卡</h3>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">填几个基本信息，系统自动生成完整角色卡</p>
+      <div class="char-form" style="display:flex;flex-direction:column;gap:8px">
+        <div class="row"><div style="flex:2"><label style="font-size:10px;color:var(--text-muted)">角色名</label><input id="qc-name" placeholder="如：黎麦"></div>
+        <div style="flex:1"><label style="font-size:10px;color:var(--text-muted)">年龄</label><input id="qc-age" placeholder="如：19" type="number"></div>
+        <div style="flex:1"><label style="font-size:10px;color:var(--text-muted)">性别</label>
+          <select id="qc-gender"><option value="男">男</option><option value="女">女</option></select></div></div>
+        <label style="font-size:10px;color:var(--text-muted)">描述外貌特征</label>
+        <textarea id="qc-appearance" rows="2" placeholder="身高、体型、穿着风格、气质…如：身高176cm，黑色运动夹克，眼神沉稳"></textarea>
+        <label style="font-size:10px;color:var(--text-muted)">背景故事 / 职业 / 特长</label>
+        <textarea id="qc-background" rows="3" placeholder="在哪里生活？做什么工作？有什么特长或爱好？
+如：在上海出生，19岁到东京留学。从小练短棍格斗，加入大学居合道社。性格内向但遇事冷静。"></textarea>
+        <label style="font-size:10px;color:var(--text-muted)">特殊装备（可选）</label>
+        <input id="qc-gear" placeholder="如：伸缩短棍、充电宝、日语词典">
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <button class="btn-primary" onclick="quickGenerateChar()" style="flex:1;padding:10px">✨ 智能生成</button>
+          <button class="btn-secondary" onclick="document.getElementById('quick-char-modal').remove()" style="flex:0 0 auto;width:80px">取消</button>
+        </div>
+        <div id="qc-preview" style="display:none;margin-top:8px;padding:8px;background:var(--bg-tertiary);border-radius:var(--radius);font-size:11px;line-height:1.6"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if(e.target===overlay) overlay.remove(); };
+}
+
+function quickGenerateChar() {
+  const name = document.getElementById('qc-name').value.trim() || '无名调查员';
+  const age = document.getElementById('qc-age').value || '25';
+  const gender = document.getElementById('qc-gender').value;
+  const appearance = document.getElementById('qc-appearance').value.trim();
+  const bg = document.getElementById('qc-background').value.trim();
+  const gearStr = document.getElementById('qc-gear').value.trim();
+
+  // 根据描述的关键词解析特征
+  const lower = (bg + ' ' + appearance).toLowerCase();
+  const isAthletic = /练|运动|健身|肌肉|体育|格斗|武术|散打|兵击|短棍|剑道|居合/.test(lower);
+  const isStrong = /壮|力量|力大|重物/.test(lower) || isAthletic;
+  const isDex = /敏捷|灵活|快|反射|迅捷|灵巧/.test(lower) || isAthletic;
+  const isSmart = /学生|教授|研究|读书|博士|知识|学术/.test(lower);
+  const isSocial = /健谈|社交|交际|酒保|销售|谈判|说服/.test(lower);
+  const isObservant = /观察|敏锐|细心|侦探|记者|摄影/.test(lower);
+  const isJapan = /日本|东京|留学/.test(lower);
+  const isChina = /中国|上海|北京|广州/.test(lower);
+  const hasWeapon = /棍|刀|剑|枪|匕/.test(lower);
+  const isDoctor = /医生|护士|医/.test(lower);
+  const isResearcher = /研究|实验|学者/.test(lower);
+
+  // 分配属性 (基准50，根据关键词调整)
+  const roll = () => Math.floor(Math.random() * 21 + 40); // 40-60随机基准
+  const attrs = {
+    str: Math.min(90, Math.max(15, (isStrong ? 70 : 50) + Math.floor(Math.random() * 10 - 5))),
+    con: Math.min(90, Math.max(15, (isAthletic ? 65 : 50) + Math.floor(Math.random() * 10 - 5))),
+    siz: Math.min(90, Math.max(40, 55 + Math.floor(Math.random() * 10 - 5))),
+    dex: Math.min(90, Math.max(15, (isDex ? 70 : 50) + Math.floor(Math.random() * 10 - 5))),
+    app: Math.min(90, Math.max(15, 50 + Math.floor(Math.random() * 10 - 5))),
+    int: Math.min(90, Math.max(40, (isSmart ? 70 : 55) + Math.floor(Math.random() * 10 - 5))),
+    pow: Math.min(90, Math.max(15, 55 + Math.floor(Math.random() * 10 - 5))),
+    edu: Math.min(90, Math.max(40, (isSmart ? 65 : 50) + Math.floor(Math.random() * 10 - 5)))
+  };
+
+  // 选职业
+  let occ = '学生';
+  if (isDoctor) occ = '医生';
+  else if (isResearcher) occ = '研究员';
+  else if (isSocial && !isSmart) occ = '酒保';
+  else if (isObservant && isJapan) occ = '记者';
+  else if (isSmart && !isAthletic) occ = '教授';
+  else if (isAthletic && hasWeapon) occ = '军人';
+  else if (isAthletic) occ = '运动员/体力劳动者';
+
+  // 生成技能
+  const skills = {};
+  const baseSkills = { '侦查':25,'聆听':20,'潜行':20,'图书馆使用':20,'话术':5,'说服':10,'心理学':10,'格斗(斗殴)':25,'闪避':Math.floor(attrs.dex/2),'急救':30,'攀爬':20,'投掷':20 };
+  Object.entries(baseSkills).forEach(([k,v]) => { skills[k] = v; });
+
+  // 根据背景加技能
+  if (isAthletic) { skills['格斗(斗殴)'] = Math.max(60, skills['格斗(斗殴)']+20); skills['闪避'] = Math.max(50, skills['闪避']+10); skills['攀爬'] = 50; }
+  if (isObservant) { skills['侦查'] = 60; skills['聆听'] = 50; }
+  if (isSmart) { skills['图书馆使用'] = 60; skills['心理学'] = 50; skills['历史'] = 40; }
+  if (isSocial) { skills['话术'] = 50; skills['说服'] = 50; skills['魅惑'] = 40; }
+  if (isDoctor) { skills['急救'] = 60; skills['医学'] = 50; skills['精神分析'] = 30; }
+  if (isResearcher) { skills['图书馆使用'] = 65; skills['科学'] = 50; skills['语言(其他)'] = 40; }
+  if (isJapan) { skills['语言(其他)'] = Math.max(50, skills['语言(其他)']||0); }
+
+  // 物品
+  const inventory = ['手机','钱包','钥匙串'];
+  if (gearStr) gearStr.split(/[,，、]/).forEach(i => { const t=i.trim(); if(t) inventory.push(t); });
+  if (hasWeapon && !gearStr) inventory.push('随身武器');
+
+  // 构建角色
+  const hp = Math.floor((attrs.con + attrs.siz) / 10);
+  const sanVal = attrs.pow;
+  const sCon = attrs.str + attrs.siz;
+  let db='0',build=0;
+  if (sCon<=64){db='-2';build=-2;}else if(sCon<=84){db='-1';build=-1;}else if(sCon<=124){db='0';build=0;}else if(sCon<=164){db='+1D4';build=1;}else if(sCon<=204){db='+1D6';build=2;}else{db='+2D6';build=3;}
+
+  state.investigator = {
+    name, playerName:name, occ, era:'2013年', age, gender,
+    residence: bg.match(/住在[^，。]+/)?.[0] || bg.match(/在[^的]+/)?.[0] || '未知',
+    birthplace: bg.match(/上海|北京|广州|深圳|杭州|成都/)?.[0] || '中国',
+    attrs, hp:{current:hp,max:hp}, mp:{current:Math.floor(sanVal/5),max:Math.floor(sanVal/5)},
+    san:{current:sanVal,max:sanVal,init:sanVal}, luck:{current:roll3d6x5(),max:roll3d6x5()},
+    db, build, mov:8, credit:15, skills, inventory, weapons:[],
+    appearance, bg, beliefs:'', motto:'', connections:'', notes:'',
+    _meta:{totalPoints:Object.values(attrs).reduce((a,b)=>a+b,0), rating:'自动生成', createdAt:new Date().toISOString(), version:'COC 7e'}
+  };
+  updateCharSheet();
+  autoSave();
+  document.getElementById('quick-char-modal').remove();
+
+  addMsg('system', `⚡ 智能建卡完成——「${name}」${occ} ${age}岁`, 'system');
+  addMsg('system', `📊 属性: STR${attrs.str} CON${attrs.con} DEX${attrs.dex} INT${attrs.int} | HP:${hp} SAN:${sanVal} DB:${db}`, 'system');
+  addMsg('system', `⭐ 擅长: ${Object.entries(skills).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>`${k}${v}%`).join('、')}`, 'system');
+  showToast(`✅ 已生成调查员「${name}」`);
+  showReadyScreen();
+}
+
+// ==================== CHARACTER CREATION ====================
+function openCharCreate() {
+  const c = state.investigator || {};
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'char-modal';
+  overlay.innerHTML = `
+    <div class="modal" style="width:620px;max-height:92vh">
+      <h3>🎭 创建调查员</h3>
+      <div style="display:flex;gap:6px;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px">
+        <button class="cc-tab active" onclick="switchCCTab('basic',this)" style="flex:1;padding:6px;background:var(--crimson);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600" id="tab-basic-btn">📋 基本信息</button>
+        <button class="cc-tab" onclick="switchCCTab('attrs',this)" style="flex:1;padding:6px;background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:11px" id="tab-attrs-btn">🎲 属性</button>
+        <button class="cc-tab" onclick="switchCCTab('skills',this)" style="flex:1;padding:6px;background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:11px" id="tab-skills-btn">⭐ 技能</button>
+        <button class="cc-tab" onclick="switchCCTab('gear',this)" style="flex:1;padding:6px;background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:11px" id="tab-gear-btn">🎒 装备</button>
+        <button class="cc-tab" onclick="switchCCTab('story',this)" style="flex:1;padding:6px;background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:11px" id="tab-story-btn">📖 背景</button>
+      </div>
+
+      <!-- Tab 1: 基本信息 -->
+      <div class="cc-panel" id="cc-panel-basic">
+        <div class="char-form">
+          <div class="row">
+            <div><label>角色姓名</label><input id="cc-name" value="${c.name||''}" placeholder="例如：卡迪亚·桑迪"></div>
+            <div><label>玩家昵称</label><input id="cc-player" value="${c.playerName||''}" placeholder="你的名字"></div>
+          </div>
+          <div class="row">
+            <div><label>职业 <span style="color:var(--crimson-light)">(影响职业技能)</span></label>
+              <select id="cc-occ" onchange="onOccChange()">
+                <option value="">—— 选择职业 ——</option>
+                ${OCCUPATIONS.map(o => `<option value="${o.name}" ${c.occ===o.name?'selected':''}>${o.name} (${o.e})</option>`).join('')}
+              </select>
+            </div>
+            <div><label>时代</label>
+              <select id="cc-era">
+                <option value="1920s" ${(c.era||'1920s')==='1920s'?'selected':''}>1920s 经典时代</option>
+                <option value="现代" ${c.era==='现代'?'selected':''}>现代</option>
+                <option value="1890s" ${c.era==='1890s'?'selected':''}>1890s 维多利亚</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div><label>年龄</label><input id="cc-age" type="number" value="${c.age||''}" placeholder="如 27" min="15" max="90"></div>
+            <div><label>性别</label>
+              <select id="cc-gender"><option value="">选择</option><option value="男" ${c.gender==='男'?'selected':''}>男</option><option value="女" ${c.gender==='女'?'selected':''}>女</option></select>
+            </div>
+          </div>
+          <div class="row">
+            <div><label>居住地</label><input id="cc-residence" value="${c.residence||''}" placeholder="如：波士顿"></div>
+            <div><label>出生地</label><input id="cc-birthplace" value="${c.birthplace||''}" placeholder="如：旧金山"></div>
+          </div>
+          <div id="occ-info" style="margin-top:6px;padding:8px;background:var(--bg-tertiary);border-radius:var(--radius);font-size:11px;color:var(--text-muted);line-height:1.6">
+            ${c.occ ? OCCUPATIONS.find(o=>o.name===c.occ) ? formatOccInfo(OCCUPATIONS.find(o=>o.name===c.occ)) : '选择职业后显示详情' : '选择职业后显示职业技能分配详情'}
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: 属性 -->
+      <div class="cc-panel" id="cc-panel-attrs" style="display:none">
+        <div class="char-form">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <label style="font-size:10px;color:var(--text-muted)">属性值 — 3D6×5 / (2D6+6)×5</label>
+            <div style="display:flex;gap:4px">
+              <button onclick="rollAllAttrs()" style="background:var(--crimson);border:none;color:#fff;padding:4px 12px;border-radius:var(--radius);cursor:pointer;font-size:11px;font-weight:600">🎲 随机投骰全部</button>
+            </div>
+          </div>
+          <div id="attr-rating" style="display:none;margin-bottom:6px;padding:6px 10px;border-radius:var(--radius);font-size:11px;text-align:center"><span id="rating-text"></span></div>
+          <div class="stat-grid">
+            ${['str','con','siz','dex','app','int','pow','edu'].map(a => {
+              const isBig = ['siz','int','edu'].includes(a);
+              const rollNote = isBig ? '(2D6+6)×5' : '3D6×5';
+              const range = isBig ? '40-90' : '15-90';
+              return `<div class="stat-item" style="position:relative">
+                <div class="sn">${ATTR_SHORT[a]} <span style="font-size:8px;color:var(--text-muted)">${ATTR_ABBR[a]} ${rollNote}</span></div>
+                <input id="cc-${a}" type="number" value="${c.attrs?c.attrs[a]:0}" min="0" max="99" onchange="updateAttrRating()" style="width:100%;text-align:center;background:transparent;border:none;color:var(--text-primary);font-size:16px;font-weight:600">
+                <div style="font-size:8px;color:var(--text-muted)">合法:${range}</div>
+              </div>`;
+            }).join('')}
+          </div>
+          <div id="attr-validation" style="margin-top:4px;font-size:10px;color:var(--text-muted);min-height:14px"></div>
+          <div style="margin-top:6px;padding:6px 8px;background:var(--bg-tertiary);border-radius:var(--radius);font-size:10px;color:var(--text-muted);line-height:1.5">
+            📌 <b>按COC 7e规则书 p.26</b>：
+            3D6×5 属性(STR/CON/DEX/APP/POW)范围15-90，
+            (2D6+6)×5 属性(SIZ/INT/EDU)范围40-90。
+            每项属性的合法范围必须严格遵守，否则角色创建将被阻止。
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: 技能 -->
+      <div class="cc-panel" id="cc-panel-skills" style="display:none">
+        <div class="char-form">
+          <div id="skill-points-display" style="padding:6px 8px;background:var(--bg-tertiary);border-radius:var(--radius);margin-bottom:6px;font-size:11px">
+            <span id="occ-pts-display">职业: 选职业后计算</span> | <span id="int-pts-display">兴趣: 选职业后计算</span>
+          </div>
+          <div style="max-height:280px;overflow-y:auto">
+            ${SKILL_LIST.map(s => {
+              const val = c.skills ? (c.skills[s.name] || s.base) : s.base;
+              return `<div class="stat-row" style="padding:3px 0;font-size:12px">
+                <span class="skill-label">${s.name} <span class="skill-base">(基础${s.base}%)</span></span>
+                <input class="skill-input" id="sk-${s.name}" type="number" value="${val}" min="0" max="99" data-base="${s.base}"
+                  onchange="document.getElementById('sk-val-${s.name}').textContent=this.value+'%'">
+                <span class="skill-pct" id="sk-val-${s.name}">${val}%</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: 装备 -->
+      <div class="cc-panel" id="cc-panel-gear" style="display:none">
+        <div class="char-form">
+          <label style="font-size:10px;color:var(--text-muted)">信用评级 <span style="color:var(--gold-light)">(影响财富)</span></label>
+          <div class="row">
+            <div><input id="cc-credit" type="number" value="${c.credit||0}" placeholder="0" min="0" max="99" onchange="updateWealth()"></div>
+            <div style="flex:2;font-size:10px;color:var(--text-muted);padding:6px" id="wealth-display">现金: — | 资产: —</div>
+          </div>
+          <label style="font-size:10px;color:var(--text-muted)">随身物品 (一行一个)</label>
+          <textarea id="cc-items" rows="3" placeholder="手机
+钱包
+钥匙串
+手电筒">${(c.inventory||['手机','钱包','钥匙串']).join('\n')}</textarea>
+          <label style="font-size:10px;color:var(--text-muted)">武器 (名称 | 技能 | 伤害 | 射程)</label>
+          <textarea id="cc-weapons" rows="2" placeholder="拳头 | 格斗(斗殴) | 1D3+DB | 近战">${c.weapons ? c.weapons.join('\n') : ''}</textarea>
+        </div>
+      </div>
+
+      <!-- Tab 5: 背景 -->
+      <div class="cc-panel" id="cc-panel-story" style="display:none">
+        <div class="char-form">
+          <label style="font-size:10px;color:var(--text-muted)">外貌特征</label>
+          <textarea id="cc-appearance" rows="2" placeholder="身高、体型、发型、穿着风格等">${c.appearance||''}</textarea>
+          <div class="row">
+            <div><label style="font-size:10px;color:var(--text-muted)">思想信念 / 性格</label><input id="cc-beliefs" value="${c.beliefs||''}" placeholder="如：不信鬼神，务实主义者"></div>
+            <div><label style="font-size:10px;color:var(--text-muted)">口头禅</label><input id="cc-motto" value="${c.motto||''}" placeholder='如：这可不太妙'></div>
+          </div>
+          <label style="font-size:10px;color:var(--text-muted)">背景故事 / 为何踏上冒险</label>
+          <textarea id="cc-bg" rows="3" placeholder="写一段简短的人物背景...">${c.bg||''}</textarea>
+          <label style="font-size:10px;color:var(--text-muted)">重要之人 / 有意义的地方 / 珍重之物</label>
+          <textarea id="cc-connections" rows="2" placeholder="如：母亲（重要之人）、老家书屋（有意义的地方）、祖传怀表（珍重之物）">${c.connections||''}</textarea>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn-primary" onclick="saveChar()" style="flex:1">✨ 保存调查员</button>
+        <button class="btn-secondary" onclick="document.getElementById('char-modal').remove()" style="flex:0 0 auto;width:80px">取消</button>
+      </div>
+      <div id="cc-save-validation" style="margin-top:6px;font-size:10px;min-height:14px"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if (e.target===overlay) overlay.remove(); };
+  if (c.attrs) updateAttrRating();
+  onOccChange();
+}
+
+/* 切换创建表单标签页 */
+function switchCCTab(tab, btn) {
+  document.querySelectorAll('.cc-panel').forEach(p => p.style.display = 'none');
+  document.getElementById('cc-panel-'+tab).style.display = 'block';
+  document.querySelectorAll('.cc-tab').forEach(b => {
+    b.style.background = 'var(--bg-tertiary)';
+    b.style.color = 'var(--text-secondary)';
+    b.style.border = '1px solid var(--border)';
+  });
+  if (btn) {
+    btn.style.background = 'var(--crimson)';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+  }
+}
+
+/* 职业选择时显示详情 */
+function onOccChange() {
+  const occName = document.getElementById('cc-occ').value;
+  const info = document.getElementById('occ-info');
+  const occData = OCCUPATIONS.find(o => o.name === occName);
+  if (occData) {
+    info.innerHTML = formatOccInfo(occData);
+    // 更新技能点计算
+    const edu = parseInt(document.getElementById('cc-edu')?.value) || 50;
+    const int = parseInt(document.getElementById('cc-int')?.value) || 50;
+    const ptsMatch = occData.pts.match(/EDU×(\d+)/);
+    const occPts = ptsMatch ? edu * parseInt(ptsMatch[1]) : edu * 4;
+    const intPts = int * 2;
+    document.getElementById('occ-pts-display').innerHTML = `<b>职业点数:</b> ${occData.pts}=${occPts}`;
+    document.getElementById('int-pts-display').innerHTML = `<b>兴趣点数:</b> INT×2=${intPts}`;
+  } else {
+    info.innerHTML = '<span style="color:var(--text-muted)">选择职业后显示职业技能分配详情</span>';
+  }
+}
+function formatOccInfo(o) {
+  return `<b>${o.name} (${o.e})</b>
+    <br>技能点数: ${o.pts} | 信用范围: ${o.credit}
+    <br>本职技能: ${o.skills.join('、')}`;
+}
+
+/* 信用评级 → 财富 */
+function updateWealth() {
+  const cr = parseInt(document.getElementById('cc-credit').value) || 0;
+  document.getElementById('wealth-display').innerHTML = `现金: $${cr*2} | 资产: $${cr*10} | 消费水平: $${Math.max(1,Math.floor(cr/2))}以下不记账`;
+}
+
+/* ==================== COC 7e 严格规则引擎 ==================== */
+
+/**
+ * COC 7e 核心投骰规则（严格按规则书）
+ * 3D6×5 属性: STR, CON, DEX, APP, POW → 15-90
+ * (2D6+6)×5 属性: SIZ, INT, EDU → 40-90
+ */
+function roll3d6x5() {
+  const roll = Math.floor(Math.random()*6+1) + Math.floor(Math.random()*6+1) + Math.floor(Math.random()*6+1);
+  return roll * 5;
+}
+
+function roll2d6plus6x5() {
+  const roll = Math.floor(Math.random()*6+1) + Math.floor(Math.random()*6+1) + 6;
+  return roll * 5;
+}
+
+function rollSingleAttr(key) {
+  if (['siz','int','edu'].includes(key)) return roll2d6plus6x5();
+  return roll3d6x5();
+}
+
+function rollAllAttrs() {
+  const keys = ['str','con','siz','dex','app','int','pow','edu'];
+  const attrs = {};
+  keys.forEach(k => { attrs[k] = rollSingleAttr(k); });
+  keys.forEach(k => {
+    const el = document.getElementById('cc-'+k);
+    if (el) el.value = attrs[k];
+  });
+  // 投骰动画闪烁效果
+  keys.forEach((k,i) => {
+    const el = document.getElementById('cc-'+k);
+    if (el) {
+      el.style.transition = 'background 0.2s';
+      el.style.background = '#3a1a1a';
+      setTimeout(() => { if (el) el.style.background = ''; }, 200 + i*60);
+    }
+  });
+  updateAttrRating();
+}
+
+/**
+ * 单项属性评级（严格按 COC 7e 规则书 p.32）
+ */
+function getSingleAttrRating(value) {
+  if (value < 15) return { label: '低于最低值 ❌', desc: 'COC 7e规则书规定最低值不能低于15', cls: 'fumble' };
+  if (value > 90) return { label: '超过最高值 ❌', desc: 'COC 7e规则书规定常规角色最高值不能超过90', cls: 'fumble' };
+  if (value <= 24) return { label: '极低', desc: '远超常人下限，严重缺陷', cls: 'fail' };
+  if (value <= 34) return { label: '低', desc: '低于常人平均水平', cls: 'fail' };
+  if (value <= 44) return { label: '偏低', desc: '略低于平均值', cls: 'fail' };
+  if (value <= 55) return { label: '普通', desc: '完全正常的平均水平', cls: 'success' };
+  if (value <= 64) return { label: '偏高', desc: '略高于常人', cls: 'success' };
+  if (value <= 74) return { label: '良好', desc: '明显高于平均水平', cls: 'hard' };
+  if (value <= 84) return { label: '优秀', desc: '显著优秀的特质', cls: 'extreme' };
+  return { label: '卓越', desc: '人类顶尖水平', cls: 'crit' };
+}
+
+/**
+ * 角色总评（严格按 COC 7e 规则书标准）
+ * 规则书 p.26 标准属性生成: 3D6×5 与 (2D6+6)×5
+ * 数学期望总和: (5×52.5) + (3×65) = 262.5 + 195 = 457.5
+ * 范围: 15×(5) + 40×(3) = 195 至 90×(8) = 720
+ * 但合理随机范围约: 300-600
+ */
+function getTotalRating(attrs) {
+  const vals = Object.values(attrs);
+  const total = vals.reduce((a,b) => a+b, 0);
+  const minVal = Math.min(...vals);
+  const maxVal = Math.max(...vals);
+
+  let issues = [];
+  let illegal = [];
+  let warnings = [];
+
+  // 合规检查 1: 每个属性必须在 15-90 之间（规则书 p.32 硬性要求）
+  Object.entries(attrs).forEach(([k,v]) => {
+    if (v < 15) illegal.push(`${ATTR_NAMES[k]}(${v})低于规则书最低值15，不合法`);
+    if (v > 90) illegal.push(`${ATTR_NAMES[k]}(${v})超过规则书最高值90，不合法`);
+  });
+
+  // 合规检查 2: 3D6×5 属性 (STR/CON/DEX/APP/POW) 必须是 5 的倍数且 3D6 范围
+  ['str','con','dex','app','pow'].forEach(k => {
+    const v = attrs[k];
+    if (v % 5 !== 0) warnings.push(`${ATTR_NAMES[k]}(${v})不是5的倍数，可能不是由标准3D6×5生成`);
+    if (v > 0 && v < 15) illegal.push(`${ATTR_NAMES[k]}(${v})作为3D6×5属性，最低值应为15 (3×1×5=15)`);
+    if (v > 90) illegal.push(`${ATTR_NAMES[k]}(${v})作为3D6×5属性，最高值应为90 (3×6×5=90)`);
+  });
+
+  // 合规检查 3: (2D6+6)×5 属性 (SIZ/INT/EDU)
+  ['siz','int','edu'].forEach(k => {
+    const v = attrs[k];
+    if (v % 5 !== 0) warnings.push(`${ATTR_NAMES[k]}(${v})不是5的倍数，可能不是由标准(2D6+6)×5生成`);
+    if (v > 0 && v < 40) warnings.push(`${ATTR_NAMES[k]}(${v})作为骰点属性，通常不低于40`);
+    if (v > 90) illegal.push(`${ATTR_NAMES[k]}(${v})作为(2D6+6)×5属性，最高值应为90`);
+  });
+
+  // 合规检查 4: 总点数合理范围（规则书基于骰点的期望值）
+  if (total < 300) warnings.push(`总点数${total}低于典型骰点范围下界(约300)，角色可能过弱`);
+  if (total > 600) warnings.push(`总点数${total}超过典型骰点范围上界(约600)，检查是否为合法的极端骰运`);
+  if (total < 200) illegal.push(`总点数${total}远低于规则书合理范围，无法创建合法调查员`);
+
+  // 合规检查 5: 是否有属性过低导致角色无法正常扮演
+  if (attrs.str < 20 && attrs.con < 20) warnings.push('力量和体质均极低，角色可能体弱多病影响正常行动');
+  if (attrs.int < 30) warnings.push(`智力${attrs.int}低于30，角色心智严重受限，调查类行动会极其困难`);
+
+  // 评分
+  const expected = 457.5; // COC 7e 规则书理论期望值
+  const ratio = total / expected;
+  let rating, ratingClass, color;
+  if (illegal.length > 0) {
+    rating = '不合规 ❌';
+    ratingClass = 'fumble';
+    color = 'var(--crimson-light)';
+  } else if (total < 350) {
+    rating = '偏弱 — 挑战高 ⚠️';
+    ratingClass = 'fail';
+    color = '#c0392b';
+  } else if (total < 410) {
+    rating = '略低于平均';
+    ratingClass = 'fail';
+    color = '#d35400';
+  } else if (total < 460) {
+    rating = '标准调查员 ✅';
+    ratingClass = 'success';
+    color = '#27ae60';
+  } else if (total < 510) {
+    rating = '较强 💪';
+    ratingClass = 'hard';
+    color = '#2e86c1';
+  } else if (total < 560) {
+    rating = '精英 ⭐';
+    ratingClass = 'extreme';
+    color = '#8e44ad';
+  } else {
+    rating = '天选之人 🔥';
+    ratingClass = 'crit';
+    color = '#c9a94e';
+  }
+
+  return { total, rating, ratingClass, color, ratio, illegal, warnings, issues, minVal, maxVal };
+}
+
+function updateAttrRating() {
+  const attrs = {};
+  ['str','con','siz','dex','app','int','pow','edu'].forEach(a => {
+    const el = document.getElementById('cc-'+a);
+    attrs[a] = parseInt(el ? el.value : 0) || 0;
+  });
+  const vals = Object.values(attrs);
+  if (vals.every(v => v === 0)) {
+    document.getElementById('attr-rating').style.display = 'none';
+    document.getElementById('attr-validation').textContent = '💡 点击「随机投骰全部」按规则书骰点生成属性，或手动输入 15-90 之间的数值';
+    return;
+  }
+  const rating = getTotalRating(attrs);
+  const el = document.getElementById('attr-rating');
+  el.style.display = 'block';
+
+  let bgColor;
+  if (rating.ratingClass === 'crit') bgColor = '#1a1a0a';
+  else if (rating.ratingClass === 'extreme') bgColor = '#0a0a1a';
+  else if (rating.ratingClass === 'hard') bgColor = '#0a1a0a';
+  else if (rating.ratingClass === 'success') bgColor = '#0a140a';
+  else if (rating.ratingClass === 'fail') bgColor = '#1a0a0a';
+  else bgColor = '#1a0a0a';
+  el.style.background = bgColor;
+  el.style.border = '1px solid ' + rating.color;
+
+  const pct = Math.round(rating.ratio * 100);
+  const rt = document.getElementById('rating-text') || document.getElementById('attr-rating');
+  if (rt) rt.innerHTML =
+    `<b style="color:${rating.color}">总属性: ${rating.total} 点</b> (期望: ~457) — ${rating.rating}
+     <br><span style="color:var(--text-muted);font-size:10px">相对强度: ${pct}% | 最低: ${rating.minVal} | 最高: ${rating.maxVal}</span>`;
+
+  // 合规性验证结果
+  const validation = document.getElementById('attr-validation');
+  let msgs = [];
+  if (rating.illegal.length > 0) {
+    msgs.push(`<b style="color:var(--crimson-light)">❌ 违反规则书: ${rating.illegal.join('; ')}</b>`);
+  }
+  if (rating.warnings.length > 0) {
+    rating.warnings.forEach(w => msgs.push(`<span style="color:var(--gold-light)">⚠️ ${w}</span>`));
+  }
+  if (msgs.length === 0) {
+    msgs.push(`<span style="color:var(--green-light)">✅ 符合COC 7e规则书标准，可以创建</span>`);
+  }
+  validation.innerHTML = msgs.join('<br>');
+}
+
+function saveChar() {
+  // ---- 严格合规检查 ----
+  const get = id => parseInt(document.getElementById(id).value) || 0;
+  const attrs = {};
+  ['str','con','siz','dex','app','int','pow','edu'].forEach(a => {
+    let v = get('cc-'+a);
+    if (v === 0) v = rollSingleAttr(a);
+    attrs[a] = Math.max(0, v);
+  });
+
+  const rating = getTotalRating(attrs);
+
+  // 规则书硬性拦截: 存在不合法属性值 → 阻止保存
+  if (rating.illegal.length > 0) {
+    addMsg('system', `<b style="color:var(--crimson-light)">❌ 角色创建被拒绝</b><br>规则书检查失败:<br>${rating.illegal.join('<br>')}<br><br>请调整属性再试。`, 'system');
+    showToast('违反规则书，无法创建');
+    return;
+  }
+
+  // 存在警告时询问是否确认
+  if (rating.warnings.length > 0) {
+    const warnMsg = rating.warnings.join('\n');
+    if (!confirm(`⚠️ 以下事项需要注意:\n\n${warnMsg}\n\n是否确认创建？\n(你可以选择取消后调整属性)`)) {
+      return;
+    }
+  }
+
+  // ---- 合规通过，正式创建 ----
+  ['str','con','siz','dex','app','int','pow','edu'].forEach(a => {
+    if (attrs[a] < 15) attrs[a] = 15;
+    if (attrs[a] > 90) attrs[a] = 90;
+  });
+
+  // 衍生值计算（严格按COC 7e官方规则书 p.7-8）
+  // HP = (CON + SIZ) / 10，向下取整
+  const hp = Math.floor((attrs.con + attrs.siz) / 10);
+  // SAN起始值 = POW
+  const sanVal = attrs.pow;
+  // 幸运 = 3D6×5（独立投骰，与POW无关！）
+  const luckVal = roll3d6x5();
+
+  // 伤害加值DB与体格Build（官方规则书 p.8 表格）
+  const strCon = attrs.str + attrs.siz;
+  let db = '0', build = 0;
+  if (strCon <= 64) { db = '-2'; build = -2; }
+  else if (strCon <= 84) { db = '-1'; build = -1; }
+  else if (strCon <= 124) { db = '0'; build = 0; }
+  else if (strCon <= 164) { db = '+1D4'; build = 1; }
+  else if (strCon <= 204) { db = '+1D6'; build = 2; }
+  else { db = '+2D6'; build = 3; } // 扩展表（完整版规则书）
+
+  const occ = document.getElementById('cc-occ').value;
+  const eduVal = attrs.edu;
+  const intVal = attrs.int;
+  const skillPoints = eduVal * 4 + intVal * 2;
+
+  // 收集技能值
+  const skills = {};
+  SKILL_LIST.forEach(s => {
+    const el = document.getElementById('sk-'+s.name);
+    skills[s.name] = el ? parseInt(el.value) || s.base : s.base;
+  });
+
+  // 收集物品
+  const itemsStr = document.getElementById('cc-items').value;
+  const inventory = itemsStr ? itemsStr.split('\n').map(i=>i.trim()).filter(i=>i) : ['手机','钱包','钥匙串'];
+
+  const credit = parseInt(document.getElementById('cc-credit').value) || 0;
+
+  state.investigator = {
+    name: document.getElementById('cc-name').value.trim() || '无名调查员',
+    playerName: document.getElementById('cc-player').value.trim(),
+    occ: occ,
+    era: document.getElementById('cc-era').value,
+    age: document.getElementById('cc-age').value,
+    gender: document.getElementById('cc-gender').value,
+    residence: document.getElementById('cc-residence').value,
+    birthplace: document.getElementById('cc-birthplace').value,
+    attrs: attrs,
+    hp: { current: hp, max: hp },
+    mp: { current: Math.floor(sanVal/5), max: Math.floor(sanVal/5) },
+    san: { current: sanVal, max: sanVal, init: sanVal },
+    luck: { current: luckVal, max: luckVal },
+    db: db, build: build, mov: 8,
+    skills: skills,
+    credit: credit,
+    skillPoints: skillPoints,
+    inventory: inventory,
+    weapons: [],
+    appearance: document.getElementById('cc-appearance').value.trim(),
+    beliefs: document.getElementById('cc-beliefs').value.trim(),
+    motto: document.getElementById('cc-motto').value.trim(),
+    bg: document.getElementById('cc-bg').value.trim(),
+    connections: document.getElementById('cc-connections').value.trim(),
+    notes: '',
+    _meta: {
+      totalPoints: rating.total,
+      rating: rating.rating,
+      createdAt: new Date().toISOString(),
+      version: 'COC 7e'
+    }
+  };
+
+  document.getElementById('char-modal').remove();
+  updateCharSheet();
+  autoSave();
+  addMsg('system', `🎭 调查员「${state.investigator.name}」创建完成！`, 'system');
+  addMsg('system', `📊 属性总评: ${rating.total}点 | ${rating.rating} | 期望值约457点`, 'system');
+  showToast(`✅ 「${state.investigator.name}」创建成功！点击「开始冒险」或输入「准备好了」`);
+  advanceTutorial();
+  showReadyScreen();
+}
+
+// ==================== TIER (人类水平等级) ====================
+const TIER_MAP = [
+  { max:14, label:'衰竭', cls:'tier-feeble' },
+  { max:24, label:'极弱', cls:'tier-feeble' },
+  { max:34, label:'脆弱', cls:'tier-weak' },
+  { max:44, label:'偏弱', cls:'tier-weak' },
+  { max:55, label:'普通', cls:'tier-average' },
+  { max:64, label:'偏强', cls:'tier-above' },
+  { max:74, label:'健壮', cls:'tier-strong' },
+  { max:84, label:'强壮', cls:'tier-strong' },
+  { max:94, label:'极强', cls:'tier-extreme' },
+  { max:99, label:'人类极限', cls:'tier-extreme' }
+];
+function getTier(v) {
+  for (const t of TIER_MAP) { if (v <= t.max) return t; }
+  return { label:'超凡', cls:'tier-extreme' };
+}
+
+// ==================== 角色卡刷新 ====================
+function updateCharSheet() {
+  const c = state.investigator;
+  const ids = ['c-name','c-occ','c-demo','c-residence','hp-text','san-text','luck-text',
+               'hp-bar','san-bar','luck-bar','c-db','c-mp','attr-grid','inv-list','wealth-display','skills-list'];
+  const safe = (id) => document.getElementById(id);  // 容错返回null
+  if (!c) {
+    safe('c-name').textContent = '—';
+    safe('c-occ').textContent = '—';
+    safe('c-demo').textContent = '—';
+    safe('c-residence').textContent = '—';
+    safe('hp-text').textContent = '—/—';
+    safe('san-text').textContent = '—/—';
+    safe('luck-text').textContent = '—';
+    safe('hp-bar').style.width = '0%';
+    safe('san-bar').style.width = '0%';
+    safe('luck-bar').style.width = '0%';
+    safe('c-db').textContent = '—';
+    safe('c-mp').textContent = '—';
+    if (safe('attr-grid')) safe('attr-grid').innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:12px;font-size:11px">—</div>';
+    if (safe('inv-list')) safe('inv-list').innerHTML = '<div style="text-align:center;padding:4px;font-size:10px;color:var(--text-muted)">—</div>';
+    if (safe('wealth-display')) safe('wealth-display').style.display = 'none';
+    if (safe('skills-list')) safe('skills-list').innerHTML = '<div style="font-size:11px;color:var(--text-muted)">—</div>';
+    const ls = safe('left-summary'), le = safe('left-empty');
+    if (ls) ls.style.display = 'none';
+    if (le) le.style.display = 'block';
+    return;
+  }
+  // 显示摘要，隐藏空状态
+  const ls = safe('left-summary'), le = safe('left-empty');
+  if (ls) ls.style.display = 'block';
+  if (le) le.style.display = 'none';
+
+  safe('c-name').textContent = c.name + (c.playerName ? ' ('+c.playerName+')' : '');
+  safe('c-occ').textContent = (c.occ||'-');
+  safe('c-demo').textContent = [c.era||'1920s', c.age||'?', c.gender||'-'].filter(Boolean).join(' / ');
+  safe('c-residence').textContent = (c.residence||'-');
+  safe('hp-text').textContent = c.hp.current + '/' + c.hp.max;
+  safe('san-text').textContent = c.san.current + '/' + c.san.max;
+  safe('luck-text').textContent = c.luck.current;
+  safe('hp-bar').style.width = (c.hp.current / c.hp.max * 100) + '%';
+  safe('san-bar').style.width = (c.san.current / c.san.max * 100) + '%';
+  safe('luck-bar').style.width = (c.luck.current / c.luck.max * 100) + '%';
+  safe('c-db').textContent = c.db;
+  safe('c-mp').textContent = (c.mp ? c.mp.current+'/'+c.mp.max : '-')+' (POW/'+Math.floor((c.attrs?c.attrs.pow:0)/5)+')';
+
+  if (safe('attr-grid')) safe('attr-grid').innerHTML = Object.entries(c.attrs).map(([k,v]) => {
+    const t = getTier(v);
+    return `<div class="attr-box">
+      <div class="an">${ATTR_SHORT[k]} <span style="font-size:8px;color:var(--text-muted)">${ATTR_ABBR[k]}</span></div>
+      <div class="av">${v}</div>
+      <span class="attr-tier ${t.cls}">${t.label}</span>
+    </div>`;
+  }).join('');
+
+  const items = c.inventory || [];
+  if (safe('inv-list')) safe('inv-list').innerHTML = `<div style="text-align:center;padding:4px;font-size:11px;color:var(--text-secondary)">
+    共 <b style="color:var(--eldritch-teal)">${items.length}</b> 件物品 · <span style="color:var(--eldritch-teal);cursor:pointer;text-decoration:underline" onclick="openBackpack()">查看详情</span>
+  </div>`;
+
+  const wd = safe('wealth-display');
+  if (wd) {
+    if (c.credit !== undefined) {
+      wd.style.display = 'block';
+      wd.innerHTML = `<span class="coin">💰 ¥${(c.credit||0)*200}</span> 现金 · <span class="coin">¥${(c.credit||0)*1000}</span> 资产 · 消费 ¥${Math.max(1,Math.floor((c.credit||0)/2)*50)}`;
+    } else {
+      wd.style.display = 'none';
+    }
+  }
+
+  // 同步到 char-view-modal（如果存在）
+  const cvSkill = safe('skills-list');
+  if (cvSkill && c.skills && Object.keys(c.skills).length > 0) {
+    const occData = OCCUPATIONS.find(o => o.name === c.occ);
+    const occSkills = occData ? occData.skills : [];
+    cvSkill.innerHTML = Object.entries(c.skills)
+      .sort((a,b) => b[1]-a[1])
+      .slice(0,12)
+      .map(([k,v]) => {
+        const isOcc = occSkills.includes(k);
+        return `<div class="stat-row"><span class="label">${k}${isOcc?' ⚡':''}</span><span class="value\">${v}%</span></div>`;
+      }).join('');
+  } else if (cvSkill) {
+    cvSkill.innerHTML = '<div style="font-size:11px;color:var(--text-muted)">—</div>';
+  }
+}
+
+// ==================== CHAT ====================
+function addMsg(type, content, subtype) {
+  const msgContainer = document.getElementById('chat-messages');
+  const area = document.getElementById('chat-area');
+  let html = '';
+  if (type === 'kp') {
+    html = `<div class="msg kp"><div class="sender">🕯 守秘人</div>${content}</div>`;
+  } else if (type === 'player') {
+    html = `<div class="msg player">${content}</div>`;
+  } else if (type === 'dice') {
+    html = `<div class="msg dice">🎲 ${content}</div>`;
+  } else if (type === 'tip') {
+    html = `<div class="msg tip"><div class="tip-label">💡 ${subtype||'小贴士'}</div>${content}</div>`;
+  } else if (type === 'rule') {
+    html = content;
+  } else {
+    html = `<div class="msg system">${content}</div>`;
+  }
+  msgContainer.innerHTML += html;
+  area.scrollTop = area.scrollHeight;
+}
+
+function sendMsg() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+  addMsg('player', text);
+  input.value = '';
+  input.style.height = 'auto';
+
+  // 骰娘指令拦截
+  if (text.startsWith('.')) { handleDiceCmd(text); return; }
+
+  if (!state.investigator) {
+    const sassy = ['你先去创建个角色行不行啊（叹气）','没角色我怎么陪你玩，嗯？','卡都没有就想跑团？点击左边那个按钮谢谢','空手来？车卡去！'][Math.floor(Math.random()*4)];
+    setTimeout(() => addMsg('kp', sassy), 300);
+    return;
+  }
+
+  if (!state.tutorialDone && state.tutorialStep < 5) {
+    addMsg('tip', '建议你完成新手教程后再开始冒险。点击顶部的教程进度条可以查看各章节，或者直接输入"我准备好了"跳过教程。');
+    return;
+  }
+
+  // Start the game
+  if (!state.gamePhase || state.gamePhase === 'idle') {
+    if (text.includes('准备好') || text.includes('开始') || text.includes('出发')) {
+      startScenario();
+      return;
+    }
+  }
+
+  // If API is configured, use AI for response
+  if (state.settings.apiEnabled && state.gamePhase === 'playing') {
+    callAI(text);
+  } else if (state.gamePhase === 'playing') {
+    processAction(text);
+  } else {
+    processAction(text);
+  }
+}
+
+function qAction(action) {
+  document.getElementById('user-input').value = '我想' + action;
+  sendMsg();
+}
+
+// ==================== COMBAT/DICE HELPERS ====================
+function d100() { return Math.floor(Math.random() * 100) + 1; }
+
+function diceRoll(sides, count) {
+  count = count || 1;
+  let total = 0;
+  let rolls = [];
+  for (let i=0; i<count; i++) {
+    const r = Math.floor(Math.random() * sides) + 1;
+    rolls.push(r);
+    total += r;
+  }
+  return { total, rolls, str: count === 1 ? `1d${sides}=${total}` : `${count}d${sides}=[${rolls.join(',')}]=${total}` };
+}
+
+function skillCheck(skillName, skillValue) {
+  const roll = d100();
+  let level = 'fail';
+  if (roll === 1) level = 'crit';
+  else if (roll >= 96 && skillValue < 50) level = 'fumble';
+  else if (roll >= 100) level = 'fumble';
+  else if (roll <= Math.floor(skillValue / 5)) level = 'extreme';
+  else if (roll <= Math.floor(skillValue / 2)) level = 'hard';
+  else if (roll <= skillValue) level = 'success';
+  else if (roll >= 96) level = 'fumble';
+  return { roll, level, skillValue };
+}
+
+function formatCheckResult(res, skillName) {
+  const levelNames = {
+    crit: '🔥 大成功！',
+    extreme: '💫 极难成功！',
+    hard: '⭐ 困难成功！',
+    success: '✅ 成功',
+    fail: '❌ 失败',
+    fumble: '💀 大失败！'
+  };
+  const colors = {
+    crit: 'crit', extreme: 'extreme', hard: 'hard', success: 'success', fail: 'fail', fumble: 'fumble'
+  };
+  return {
+    text: `${skillName}检定: d100=${res.roll} / ${res.skillValue}%`,
+    result: levelNames[res.level],
+    cls: colors[res.level]
+  };
+}
+
+function openDice() {
+  const c = state.investigator;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'dice-modal';
+  overlay.innerHTML = `
+    <div class="modal" style="width:420px">
+      <h3>🎲 投骰面板</h3>
+      <div class="dice-grid">
+        ${[
+          {d:'d4',v:4},{d:'d6',v:6},{d:'d8',v:8},{d:'d10',v:10},
+          {d:'d12',v:12},{d:'d20',v:20},{d:'d100',v:100},{d:'SAN检定',v:0}
+        ].map(d => `
+          <div class="dice-btn" onclick="(function(d,v){ if(d==='SAN检定'){ simpleRoll('SAN',0);} else { simpleRoll(d,v);} document.getElementById('dice-modal').remove(); }('${d.d}',${d.v}))">
+            <span>${d.d==='d100'?'%':d.d==='SAN检定'?'🌀':d.v}</span>
+            <span class="dl">${d.d==='SAN检定'?'理智':d.d}</span>
+          </div>
+        `).join('')}
+      </div>
+      ${c ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:12px">
+        <button class="dice-btn" style="aspect-ratio:auto;padding:6px;font-size:11px" onclick="skillRoll('侦查');document.getElementById('dice-modal').remove()">🔍 侦查 (${c.skills['侦查']||25}%)</button>
+        <button class="dice-btn" style="aspect-ratio:auto;padding:6px;font-size:11px" onclick="skillRoll('聆听');document.getElementById('dice-modal').remove()">👂 聆听 (${c.skills['聆听']||20}%)</button>
+        <button class="dice-btn" style="aspect-ratio:auto;padding:6px;font-size:11px" onclick="skillRoll('话术');document.getElementById('dice-modal').remove()">💬 话术 (${c.skills['话术']||5}%)</button>
+        <button class="dice-btn" style="aspect-ratio:auto;padding:6px;font-size:11px" onclick="skillRoll('图书馆');document.getElementById('dice-modal').remove()">📚 图书馆 (${c.skills['图书馆']||20}%)</button>
+      </div>` : ''}
+      <button class="btn-secondary" onclick="document.getElementById('dice-modal').remove()">关闭</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if (e.target===overlay) overlay.remove(); };
+}
+
+function simpleRoll(name, sides) {
+  if (sides === '%') { d100Roll('d100'); return; }
+  if (sides === '🌀') { sanCheck(1); return; }
+  const r = diceRoll(typeof sides === 'number' ? sides : 100);
+  addMsg('dice', `${name}: ${r.str}`);
+}
+
+function d100Roll(label) {
+  const r = d100();
+  addMsg('dice', `D100: ${r}`);
+}
+
+function skillRoll(skill) {
+  if (!state.investigator) { addMsg('system', '请先创建调查员'); return; }
+  const val = state.investigator.skills[skill] || getBaseSkill(skill);
+  const res = skillCheck(skill, val);
+  const fmt = formatCheckResult(res, skill);
+  addMsg('dice', `${fmt.text} → ${fmt.result}`);
+  return res;
+}
+
+function getBaseSkill(name) {
+  const found = SKILL_LIST.find(s => s.name === name);
+  return found ? found.base : 5;
+}
+
+function sanCheck(difficulty) {
+  if (!state.investigator) { addMsg('system', '请先创建调查员'); return; }
+  const c = state.investigator;
+  const res = skillCheck('SAN', c.san.current);
+  const fmt = formatCheckResult(res, 'SAN');
+  addMsg('dice', `${fmt.text} → ${fmt.result}`);
+  return res;
+}
+
+// ==================== SCENARIO: 常暗之厢 ====================
+function startScenario() {
+  state.gamePhase = 'playing';
+  state.sceneData.currentCar = 1;
+  addMsg('system', '========== 常暗之厢 ==========', 'system');
+  addMsg('kp', `<i>2013年，某个普通的夜晚。你加班到很晚，拖着疲惫的身躯赶上了今天的末班电车。车厢里稀稀落落坐了几个乘客，你找了个座位坐下，眼皮越来越沉，不知不觉陷入了沉睡...</i>`);
+  addMsg('kp', `<i>不知过了多久，你猛然惊醒。</i>`);
+  addMsg('kp', `车厢里空无一人。所有的乘客都消失了，只剩下你自己。窗外不是熟悉的街灯，而是一片浓稠的黑暗。电车仍在飞驰——但你清楚地意识到，按时间计算，早就该到终点站了。`);
+  addMsg('kp', `你看向车厢门，上面贴着一张便签：</i>「只管前进吧，已经没有退路了」</i>`);
+  addMsg('kp', `你的手机没有信号。你检查了一下身上的东西——还好，大部分物品还在。你站在空荡荡的车厢里，前方是未知的黑暗。\n\n<b>你要怎么做？</b>`);
+  addMsg('tip', '你可以：①检查便签背面 ②搜索你所在的车厢 ③前往下一节车厢 ④检查自己的物品', '操作提示');
+  advanceTutorial();
+}
+
+function processAction(text) {
+  if (state.gamePhase !== 'playing') {
+    if (text.includes('准备好') || text.includes('开始')) {
+      startScenario();
+    } else {
+      addMsg('kp', `在你开始之前，建议先完成新手教程。点击顶部的「COC新手教程」浏览规则，或者直接告诉我「我准备好了」开始冒险。`);
+    }
+    return;
+  }
+
+  const sd = state.sceneData;
+  const c = state.investigator;
+  const lower = text.toLowerCase();
+
+  // --- SCENE: CAR 1 - Empty Car ---
+  if (sd.currentCar === 1) {
+    if (lower.includes('便签') || lower.includes('纸条') || lower.includes('背面') || lower.includes('翻') || lower.includes('看')) {
+      addMsg('kp', `你仔细看了看那张便签。正面只有那句话。你把它翻过来，背面用浅色字迹写着——「第三个箱子里有藏着钥匙」。这里的"箱子"指的是车厢编号。也就是说，从车头数第三节车厢里放着什么东西。`);
+      sd.currentCar = 1;
+      return;
+    }
+    if (lower.includes('侦查') || lower.includes('搜索') || lower.includes('调查') || lower.includes('检查')) {
+      const res = skillRoll('侦查');
+      addMsg('kp', `你对当前车厢进行了搜索。这是一节普通的乘客车厢，座位排列整齐。你在座位下方的缝隙里找到了半包烟和一枚1元硬币。车门旁边贴着电车路线图——你注意到靠车尾方向的后几节车厢被人故意涂黑了，看不清楚。`);
+      return;
+    }
+    if (lower.includes('聆听') || lower.includes('听')) {
+      const res = skillRoll('聆听');
+      addMsg('kp', `你侧耳倾听。除了电车行驶的咔嗒声之外，你似乎听到了从远处——大概是车尾方向——传来了一些...声响。像是有什么沉重的东西在拖行。吱呀——嘎——节奏很慢，但越来越清晰。`);
+      return;
+    }
+    if (lower.includes('前') || lower.includes('去') || lower.includes('下一')) {
+      addMsg('kp', `你深吸一口气，推开车厢连接处的门，进入了下一节车厢。这里比前一节稍微破旧一些，座位上有几份散落的报纸，天花板上的灯忽明忽暗。列车继续在黑暗中飞驰。`);
+      sd.currentCar = 2;
+      sd.monsterDistance = Math.max(6, sd.monsterDistance - 1);
+      advanceMonster();
+      return;
+    }
+    if (lower.includes('物品') || lower.includes('手机') || lower.includes('包')) {
+      addMsg('kp', `你检查了自己的随身物品：手机（无信号，但手电筒功能可用）、钱包（证件和少量现金还在）、钥匙串。你的幸运让你保留了所有重要物品。`);
+      return;
+    }
+  }
+
+  // --- CAR 2 ---
+  if (sd.currentCar === 2) {
+    if (lower.includes('报纸') || lower.includes('读') || lower.includes('看')) {
+      addMsg('kp', `你捡起散落的报纸。日期是今天，但标题让你背脊发凉——<i>「末班电车连续失踪事件，警方调查陷入僵局」</i>。报道上说，最近一周已有5人在乘坐这趟线路的末班车后下落不明。你的心跳加快了一些。SAN 0/1`);
+      if (d100() <= c.san.current) {
+        addMsg('system', 'SAN检定成功，未损失理智值');
+      } else {
+        c.san.current = Math.max(0, c.san.current - 1);
+        addMsg('system', `SAN检定失败，SAN -1（当前${c.san.current}/${c.san.max}）`);
+        updateCharSheet();
+      }
+      return;
+    }
+    if (lower.includes('灯') || lower.includes('闪')) {
+      addMsg('kp', `天花板的灯管闪烁不定，发出轻微的嗡嗡声。你抬头仔细看了看，发现其中一根灯管上缠着一根细细的铜线——看起来像是有人故意弄坏了电路。`);
+      return;
+    }
+    if (lower.includes('侦查') || lower.includes('搜索')) {
+      const res = skillRoll('侦查');
+      if (res.level === 'success' || res.level === 'hard' || res.level === 'extreme' || res.level === 'crit') {
+        addMsg('kp', `你在座位夹缝里发现了一个小巧的**手电筒**。试了试，还能亮。这在这片漆黑中会很有用。\n\n获得物品：手电筒`);
+        sd.hasFlashlight = true;
+        c.inventory.push('手电筒');
+        updateCharSheet();
+      } else if (res.level === 'fumble') {
+        addMsg('kp', `你不小心被一张翘起的地毯绊了一下，膝盖撞到了座椅上。——1点伤害。\n\nHP -1（当前${c.hp.current-1}/${c.hp.max}）`);
+        c.hp.current = Math.max(0, c.hp.current - 1);
+        updateCharSheet();
+      } else {
+        addMsg('kp', `车厢里看起来很正常。没有发现特别的东西。`);
+      }
+      return;
+    }
+    if (lower.includes('前') || lower.includes('去') || lower.includes('找钥匙') || lower.includes('3') || lower.includes('三')) {
+      addMsg('kp', `你继续向前，推开车厢连接处的门。门的另一边有股奇怪的气味扑面而来——像是铁锈和什么腐烂的东西混在一起。这节车厢明显比刚才的凌乱得多，到处散落着行李。`);
+      sd.currentCar = 3;
+      sd.monsterDistance = Math.max(5, sd.monsterDistance - 2);
+      advanceMonster();
+      return;
+    }
+    if (lower.includes('回') || lower.includes('后') || lower.includes('退')) {
+      addMsg('kp', `你回头看了一眼刚才来的方向。那边的灯光已经完全熄灭了，一片漆黑。而且...你好像听到了什么。一种沉闷的、持续的碾压声。就在那边。`);
+      return;
+    }
+  }
+
+  // --- CAR 3 - Key Car ---
+  if (sd.currentCar === 3) {
+    if (lower.includes('钥匙') || lower.includes('箱') || lower.includes('找') || lower.includes('搜索') || lower.includes('侦查')) {
+      const res = skillRoll('侦查');
+      if (res.level === 'success' || res.level === 'hard' || res.level === 'extreme' || res.level === 'crit') {
+        addMsg('kp', `你在3号车厢的行李架角落找到了一个用布包裹的小盒子。打开一看——里面是一把**陈旧的黄铜钥匙**。钥匙上刻着一行小字：「车长室」。\n\n获得物品：黄铜钥匙`);
+        sd.hasKey = true;
+        c.inventory.push('黄铜钥匙');
+        updateCharSheet();
+      } else {
+        addMsg('kp', `你在3号车厢搜索了一遍，但这里很凌乱，暂时没发现什么。也许需要更仔细地检查——或者换个角度看看？`);
+      }
+      return;
+    }
+    if (lower.includes('气味') || lower.includes('味道') || lower.includes('铁锈')) {
+      addMsg('kp', `你循着气味看去，发现车厢角落的地板上有一滩暗色的污渍。看起来像是什么液体...你不太确定那是什么，也不想碰它。`);
+      return;
+    }
+    if (lower.includes('前') || lower.includes('4') || lower.includes('四')) {
+      addMsg('kp', `你穿过3号车厢，走向4号。这里的灯光更暗了，只有紧急出口的绿光在闪烁。你注意到4号车厢的连接门——上锁了。需要一把钥匙。`);
+      return;
+    }
+  }
+
+  // --- CAR 4 - Conductors Car ---
+  if (sd.currentCar === 4) {
+    if ((lower.includes('钥匙') || lower.includes('开') || lower.includes('门')) && sd.hasKey) {
+      addMsg('kp', `你用黄铜钥匙打开了通往4号车厢的门。门锁咔哒一声弹开。\n\n4号车厢是一节乘务员车厢。这里堆放着一些工具和杂物。一个穿着制服的**乘务员**蜷缩在角落里，听到声音猛地抬起头来。\n\n"你...你是活人？"他声音颤抖。他的腿上有一道触目惊心的伤口，被用撕碎的衬衫布条草草包扎着。`);
+      sd.conductorAwake = true;
+      sd.currentCar = 4;
+      registerNPC('conductor', '乘务员·京山人吉', {
+        age:'30代', gender:'男', appearance:'穿JR制服的男性，30岁左右，瘦高，脸色苍白。右腿上有严重的咬伤，用撕碎的衬衫布条包扎着。眼神慌乱但不失善意。',
+        relation:'neutral',
+        info:['列车被怪物袭击','车头有紧急制动闸','他有两把钥匙但弄丢了一把']
+      });
+      return;
+    }
+    if (sd.conductorAwake) {
+      if (lower.includes('问') || lower.includes('怎么') || lower.includes('发生') || lower.includes('交涉') || lower.includes('话术')) {
+        addMsg('kp', `乘务员脸色苍白地说：\n\n"我们...遇到了怪物。不是人。它从后面车厢开始...一个一个地吞噬乘客。我跑的时候摔倒了，被它抓了一下。我把其他车厢的门都锁了，想着至少能让它慢一点..."\n\n他顿了顿："车头有紧急制动。如果能到那里，拉下闸就能停车。但前面的路...我得警告你，越靠近车头越危险。"`);
+        addMsg('tip', '你了解到：①车头有紧急制动 ②怪物从车尾来 ③越往前越接近车头——但也意味着往车尾方向是怪物', '情报');
+        updateNPCInfo('conductor', 'info', '知道车头有紧急制动闸');
+        updateNPCInfo('conductor', 'info', '被怪物咬伤了腿');
+        return;
+      }
+      if (lower.includes('治疗') || lower.includes('急救') || lower.includes('包扎')) {
+        const res = skillRoll('急救');
+        if (res.level === 'success' || res.level === 'hard' || res.level === 'extreme' || res.level === 'crit') {
+          addMsg('kp', `你帮乘务员重新处理了伤口。他感激地看着你："谢谢...前面5号车厢的工具箱里应该有**撬棍**，你拿去吧，也许用得上。"\n\n乘务员好感度提升。获得情报：5号车厢有撬棍。`);
+          addMsg('tip', '乘务员说你是个好人。他提到5号车厢有撬棍。', '情报');
+          sd.hasCrowbar = true;
+        } else {
+          addMsg('kp', `你尝试给他包扎，但你的急救技能还不够熟练。虽然止血了，但走路还是很困难。他勉强笑了笑："没事，你快走吧...那东西越来越近了。"`);
+        }
+        return;
+      }
+      if (lower.includes('前') || lower.includes('5') || lower.includes('五')) {
+        addMsg('kp', `你告别乘务员，继续前进。他叫住你："小心！前面..."他的声音消失在门后。\n\n5号车厢被杂物堵塞了。你需要清理出一条路来。`);
+        sd.currentCar = 5;
+        sd.monsterDistance = Math.max(3, sd.monsterDistance - 2);
+        advanceMonster();
+        return;
+      }
+    } else {
+      if (lower.includes('钥匙') || lower.includes('开')) {
+        addMsg('kp', `门锁着。你需要一把钥匙才能打开通往4号车厢的门。还记得便签背面的话吗？「第三个箱子里有藏着钥匙」`);
+        return;
+      }
+    }
+  }
+
+  // --- CAR 5 - Blocked ---
+  if (sd.currentCar === 5) {
+    if ((lower.includes('撬棍') || lower.includes('撬') || lower.includes('搬')) && sd.hasCrowbar) {
+      addMsg('kp', `你用撬棍撬开了堵塞通道的杂物。箱子、货架被清出一条路来。穿过5号车厢，你来到了6号车厢——这里已经是靠近车头的位置了。\n\n前方就是7号车厢——也是路线图上被涂黑的部分。车头的门近在咫尺。`);
+      sd.currentCar = 6;
+      sd.monsterDistance = Math.max(2, sd.monsterDistance - 1);
+      advanceMonster();
+      return;
+    }
+    if (lower.includes('工具箱') || lower.includes('工具') || lower.includes('搜') || lower.includes('找')) {
+      addMsg('kp', `你在杂物中找到了一根生锈的**撬棍**。虽然沉了点，但用来撬门或者防身应该没问题。\n\n获得物品：撬棍`);
+      sd.hasCrowbar = true;
+      if (!c.inventory.includes('撬棍')) c.inventory.push('撬棍');
+      updateCharSheet();
+      return;
+    }
+    if (lower.includes('清理') || lower.includes('搬') || lower.includes('推')) {
+      if (sd.hasCrowbar) {
+        addMsg('kp', `你用撬棍和双手清理出一条路来。`);
+        sd.currentCar = 6;
+        advanceMonster();
+        return;
+      }
+      addMsg('kp', `你徒手开始搬动杂物。很吃力，但也不是完全不行。你看到角落里有一个工具箱，也许里面会有能帮上忙的东西。`);
+      return;
+    }
+  }
+
+  // --- CAR 6 - Final Stretch ---
+  if (sd.currentCar === 6) {
+    if (lower.includes('前') || lower.includes('7') || lower.includes('七') || lower.includes('车头') || lower.includes('制动') || lower.includes('闸')) {
+      addMsg('kp', `你推开通往7号车厢的门。\n\n这里的灯光已经完全熄灭，只有紧急出口的微光。空气中有浓重的血腥味。你看到——在黑暗中，有什么巨大的东西在那里。它填满了整个车厢的后半部分，像是一堵由血肉、钢铁和黑暗混合而成的墙壁，微微蠕动着。\n\n而在你的前方3米处，就是驾驶室的门。紧急制动闸就在里面。\n\n那东西察觉到了你的存在。整个车厢震颤起来。`);
+      sd.currentCar = 7;
+      return;
+    }
+  }
+
+  // --- CAR 7 - Finale ---
+  if (sd.currentCar === 7) {
+    if (lower.includes('跑') || lower.includes('冲') || lower.includes('开门') || lower.includes('制动') || lower.includes('拉') || lower.includes('闸')) {
+      addMsg('kp', `你爆发出了全部的力量，冲向驾驶室的门！\n\n身后传来震耳欲聋的怒吼，那东西动了！\n\n...`);
+      const finalRes = skillRoll('闪避') || skillRoll('DEX') || { roll: Math.floor(Math.random()*100)+1 };
+      if (finalRes.roll <= 50) {
+        addMsg('kp', `<i>你的手抓住了驾驶室的门把手。你用力拉开，冲进去，看到了那个红色手柄——紧急制动闸。</i>\n\n<i>你拉下了它。</i>\n\n<i>刺耳的金属摩擦声。火花。震动。列车剧烈减速——然后停了下来。</i>\n\n<i>窗外，是城市的灯光。你做到了。你还活着。</i>\n\n<b>🏆 结局：重见黎明</b>\n\n你从常暗之厢中逃了出来。但在你的记忆中，那个蠕动的巨大阴影、消失的乘客、乘务员的伤口——这一切永远挥之不去。SAN -1D6`);
+        c.san.current = Math.max(0, c.san.current - Math.floor(Math.random()*6+1));
+        updateCharSheet();
+        state.gamePhase = 'ended';
+        addMsg('system', `游戏结束。最终SAN: ${c.san.current}/${c.san.max}`);
+        addMsg('kp', `感谢你游玩「常暗之厢」！你的冒险就此结束——或者，这只是你的调查员生涯的开始？`);
+      } else {
+        addMsg('kp', `<i>你迟了一秒。</i>\n\n<i>那东西追上了你。黑暗将你吞没。你最后听到的，是列车在永恒的黑暗中的轰鸣声...</i>\n\n<b>💀 结局：葬身黑暗</b>\n\n调查员「${c.name}」在常暗之厢中失踪。列车的终点站，从未有人到达过。`);
+        state.gamePhase = 'ended';
+      }
+      return;
+    }
+    if (lower.includes('战斗') || lower.includes('打') || lower.includes('攻击')) {
+      addMsg('kp', `面对那个东西，你的人类武器显得如此无力。但你还是举起手来...转头就跑可能是更好的选择。`);
+      return;
+    }
+  }
+
+  // Default response for unrecognized actions
+  const fallbacks = [
+    `你想做什么？你可以：①侦查当前车厢 ②前往其他车厢 ③检查物品 ④与遇到的NPC交谈 ⑤使用特定物品`,
+    `注意目的一：找到通往车头的路。目的二：在怪物追上来之前拉下紧急制动。`,
+    `记住便签上的话：「只管前进吧，已经没有退路了」。你的目标是车头的驾驶室。`,
+    `你能听到后面传来越来越大、越来越近的声响。时间不多了。`
+  ];
+  addMsg('kp', fallbacks[Math.floor(Math.random() * fallbacks.length)]);
+}
+
+function advanceMonster() {
+  const dist = state.sceneData.monsterDistance;
+  if (dist <= 2) {
+    addMsg('tip', '⚠️ 那东西越来越近了！你感觉到车厢在震颤，空气中的铁锈味越来越浓。必须加快速度！', '危险警告');
+  } else if (dist <= 4) {
+    addMsg('system', '你隐约听到远处的车厢传来金属扭曲的声音...', 'system');
+  }
+}
+
+// ==================== RIGHT PANEL ====================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+function renderRules() {
+  const rules = [
+    { title: 'D100系统', desc: '所有检定用D100。≤技能=成功，≤技能/2=困难，≤技能/5=极难，01=大成功，96-00=大失败' },
+    { title: 'SAN检定 (理智)', desc: '面对恐怖时触发。投D100≤当前SAN=成功(损失较少)，失败损失更多。一次-5以上→临时疯狂' },
+    { title: '检定流程', desc: 'KP要求检定→投D100→比对技能值→判定成功等级→推进剧情' },
+    { title: '行动原则', desc: '说你想做什么→我告诉你要什么检定→你投骰→我判定结果。失败≠死路' },
+    { title: 'HP (生命值)', desc: 'HP=(CON+SIZ)/10。≤0时濒死。急救(30%)和医学(1%)可恢复' },
+    { title: 'MP (魔法值)', desc: 'MP=POW/5。使用法术或特殊能力时消耗，休息恢复' },
+    { title: '常见缩写', desc: 'STR=力量 CON=体质 SIZ=体型 DEX=敏捷 APP=外貌 INT=智力 POW=意志 EDU=教育 LUK=幸运 DB=伤害加值 MOV=移动力 KP=守秘人(我) PL=玩家(你) SC=理智检定' },
+    { title: '技能分类', desc: '探索类(侦查/聆听/潜行) 社交类(话术/说服/魅惑) 战斗类(格斗/射击/闪避) 知识类(图书馆/历史/神秘学) 医疗类(急救/医学/精神分析)' }
+  ];
+  document.getElementById('rules-list').innerHTML = rules.map(r =>
+    `<div class="rule-card"><div class="rc-title">${r.title}</div><div class="rc-desc">${r.desc}</div></div>`
+  ).join('');
+}
+
+function renderClues() {
+  document.getElementById('clues-list').innerHTML = state.clues.length > 0
+    ? state.clues.map(c => `<div style="font-size:11px;padding:3px 0;border-bottom:1px solid var(--border)">• ${c}</div>`).join('')
+    : '<div style="font-size:11px;color:var(--text-muted);padding:12px 0;text-align:center">游戏开始后线索会显示在这里</div>';
+}
+function showReadyScreen() {
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('ready-screen').style.display = '';
+}
+function startGame() {
+  document.getElementById('ready-screen').style.display = 'none';
+  startScenario();
+}
+function goHome() {
+  document.getElementById('ready-screen').style.display = 'none';
+  document.getElementById('welcome-screen').style.display = '';
+  document.getElementById('chat-messages').innerHTML = '';
+  switchTab('rules');
+  updateCharSheet();
+  renderTutorialBar();
+  renderClues();
+  renderNPCList();
+}
+
+// ==================== API SETTINGS ====================
+function openSettings() {
+  const s = state.settings;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'settings-modal';
+  overlay.innerHTML = `
+    <div class="modal" style="width:480px">
+      <h3>⚙ AI API 配置</h3>
+      <div class="settings-form" style="display:flex;flex-direction:column;gap:10px">
+        <label style="font-size:11px;color:var(--text-muted)">API 端点 (OpenAI兼容格式)</label>
+        <input id="set-endpoint" value="${s.apiEndpoint}" placeholder="填入 API 端点地址" style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);padding:7px 10px;font-size:12px;outline:none">
+        <span style="font-size:10px;color:var(--text-muted);margin-top:-6px">支持 OpenAI 兼容格式，需自行填写端点和模型名</span>
+
+        <label style="font-size:11px;color:var(--text-muted)">API 密钥</label>
+        <input id="set-key" type="password" value="${s.apiKey}" placeholder="sk-..." style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);padding:7px 10px;font-size:12px;outline:none">
+
+        <label style="font-size:11px;color:var(--text-muted)">模型名（手动输入）</label>
+        <input id="set-model" type="text" value="${s.model}" placeholder="如 GPT-4o, deepseek-chat 等" style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);padding:7px 10px;font-size:12px;outline:none">
+        <span style="font-size:10px;color:var(--text-muted);margin-top:-6px">输入你想用的模型名，需与端点兼容</span>
+
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <button class="btn-primary" onclick="saveSettings()" style="flex:1">💾 保存API配置</button>
+          <button class="btn-primary" onclick="testAPIConnection()" id="api-test-btn" style="flex:0 0 auto;width:120px;background:var(--eldritch-teal);color:#0a0e1a">🔌 测试连接</button>
+        </div>
+        <div id="api-test-result" style="padding:6px 8px;border-radius:var(--radius);font-size:11px;display:none"></div>
+        <button class="btn-secondary" onclick="document.getElementById('settings-modal').remove()">取消</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if (e.target===overlay) overlay.remove(); };
+}
+
+function saveSettings() {
+  state.settings.apiEndpoint = document.getElementById('set-endpoint').value.trim();
+  state.settings.apiKey = document.getElementById('set-key').value.trim();
+  state.settings.model = document.getElementById('set-model').value;
+  state.settings.apiEnabled = !!(state.settings.apiEndpoint && state.settings.apiKey);
+  document.getElementById('settings-modal').remove();
+  autoSave();
+  showToast(state.settings.apiEnabled ? '✅ API已配置，KP将使用AI生成回复' : '⚠️ 未填写完整，仍使用内置引擎');
+}
+
+async function testAPIConnection() {
+  const endpoint = document.getElementById('set-endpoint').value.trim();
+  const key = document.getElementById('set-key').value.trim();
+  const model = document.getElementById('set-model').value;
+  const btn = document.getElementById('api-test-btn');
+  const result = document.getElementById('api-test-result');
+
+  if (!endpoint || !key) {
+    result.style.display = 'block';
+    result.style.background = '#1a0a0a';
+    result.style.border = '1px solid var(--crimson-light)';
+    result.innerHTML = '❌ 请先填写API端点与密钥';
+    return;
+  }
+
+  btn.textContent = '⏳ 测试中...';
+  btn.disabled = true;
+  result.style.display = 'none';
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
+      body: JSON.stringify({
+        model: model,
+        messages: [{role:'user', content:'Respond with ONLY the word: OK'}],
+        max_tokens: 10
+      })
+    });
+
+    btn.textContent = '🔌 测试连接';
+    btn.disabled = false;
+    result.style.display = 'block';
+
+    if (response.ok) {
+      const data = await response.json();
+      const reply = data?.choices?.[0]?.message?.content || '';
+      if (reply.trim().toLowerCase().includes('ok')) {
+        result.style.background = '#0a1a0a';
+        result.style.border = '1px solid var(--green-light)';
+        result.innerHTML = '✅ 连接成功！API工作正常 ✓<br><span style="color:var(--text-muted);font-size:10px">模型回复: '+reply.trim()+'</span>';
+        showToast('✅ API连接测试通过');
+      } else {
+        result.style.background = '#1a1a0a';
+        result.style.border = '1px solid var(--gold)';
+        result.innerHTML = '⚠️ 连接成功但回复异常: '+reply.trim().substring(0,50);
+      }
+    } else {
+      const errText = await response.text().catch(()=>'');
+      let msg = '';
+      if (response.status === 401) msg = '❌ 认证失败：API密钥无效';
+      else if (response.status === 404) msg = '❌ 未找到：请检查API端点或模型名';
+      else if (response.status === 429) msg = '❌ 请求超限：请稍后再试';
+      else if (response.status === 400) msg = '❌ 请求格式错误：'+errText.substring(0,80);
+      else msg = `❌ HTTP ${response.status}`;
+      result.style.background = '#1a0a0a';
+      result.style.border = '1px solid var(--crimson-light)';
+      result.innerHTML = msg;
+    }
+  } catch(e) {
+    btn.textContent = '🔌 测试连接';
+    btn.disabled = false;
+    result.style.display = 'block';
+    result.style.background = '#1a0a0a';
+    result.style.border = '1px solid var(--crimson-light)';
+    result.innerHTML = '❌ 连接失败：'+e.message+'<br><span style="font-size:10px;color:var(--text-muted)">请检查端点地址和网络</span>';
+  }
+}
+
+function getSystemPrompt() {
+  const c = state.investigator;
+  if (!c) return 'You are a Keeper of Arcane Lore for Call of Cthulhu 7th edition.';
+  const items = (c.inventory||[]).join(', ');
+  const skills = c.skills ? Object.entries(c.skills).map(([k,v])=>`${k} ${v}%`).join(', ') : '';
+  const npcRegistry = state.npcs.map(n => `${n.name}(${n.age}/${n.gender}/${n.relation}): ${n.appearance} | info:${n.info.join('; ')}`).join('\n');
+  const plotEvents = state.sceneData.plotEvents.join(', ');
+  return `# ROLE
+You are an experienced Keeper of Arcane Lore (守秘人) running a Call of Cthulhu 7th Edition horror RPG. Your job is to narrate an immersive, Lovecraftian experience while keeping the story on its rails.
+
+# THE SCENARIO — 常暗之厢 (THE ETERNAL DARK CAR)
+The player is trapped on a haunted train. They woke up alone. A note reads "只管前进吧，已经没有退路了". Behind them, a cosmic horror is consuming cars. Goal: reach the driver's cab at the front and pull the emergency brake.
+
+# ⚠️ PLOT INTEGRITY — CRITICAL RULES (DO NOT VIOLATE)
+The following plot points are LOCKED and MUST occur in order:
+1. The player starts in a dark car with a note →背面写着"第三个箱子里有藏着钥匙"
+2. There are scattered newspapers with reports of the train's disappearances
+3. An injured conductor is in car 4 who knows about the emergency brake
+4. A brass key to the driver's cab is hidden somewhere
+5. The final confrontation is in the front car — pull the brake or be consumed
+6. The monster is ALWAYS approaching from behind. Time pressure must be maintained.
+7. The conductor is an unreliable narrator: he wants to STOP the train, but stopping = death. The player should go FASTER.
+
+You CAN:
+- Add atmospheric descriptions (sounds, smells, sensations)
+- Generate nuanced NPC reactions based on player's approach
+- Give NPCs small dialogue variations as long as they convey the same information
+- Clarify descriptions the module doesn't specify
+
+You CANNOT:
+- Change the ending (brake or be consumed)
+- Remove the key requirement
+- Remove the conductor's role
+- Let the player leave the train early
+- Give the player a weapon that trivializes the monster (it is a cosmic horror)
+
+# NPC SYSTEM
+When a new NPC appears, describe them vividly and I will register them. For NPCs already in the registry, use their established traits. When the player learns something useful from an NPC, distill it into a concise info point (5-15 words).
+
+Current NPC registry:
+${npcRegistry || 'No NPCs met yet'}
+
+Registered plot events: ${plotEvents || 'None yet'}
+
+# THE INVESTIGATOR
+Name: ${c.name} | ${c.occ||''} | ${c.age||''}
+HP: ${c.hp.current}/${c.hp.max} SAN: ${c.san.current}/${c.san.max}
+STR ${c.attrs.str} CON ${c.attrs.con} DEX ${c.attrs.dex} INT ${c.attrs.int}
+Key Skills: ${skills}
+Inventory: ${items}
+
+# YOUR KP STYLE — BE A REAL KEEPER
+You are NOT a template-filling machine. You are a human Keeper running a horror game for one player. Your responses should feel like they come from a real person sitting across the table.
+
+## Atmosphere (氛围营造 — the most important thing)
+- Use **adjectives** generously. H.P. Lovecraft himself said descriptive words are your friends. Don't say "the cave is dark." Say "a heavy darkness presses against your eyes, heavy with the smell of damp stone and something... older."
+- Describe through **multiple senses** — not just sight but smell, touch, sound, even taste. The train smells of rusted iron and something faintly organic. The floor vibrates subtly through the soles of your shoes.
+- **Show, don't name.** Never say "a ghoul attacks." Describe "a twisted, leather-skinned thing that moves with a clicking sound, its limbs too long and its face a mockery of human features." The player should not know monster names until their character learns them organically.
+- Use **sensory details to highlight clues.** A detailed description of a crystal statue's cold, greasy texture tells the player it matters — without you having to say "this is a clue."
+
+## NPC Behavior (角色灵动性)
+- Every NPC has a **hidden agenda or fear**. The conductor genuinely wants to help but is TERRIFIED. He will lie about the key because he's scared. His voice shakes. He keeps glancing toward the rear of the train.
+- NPCs **react to the player's approach.** If the player is kind, the NPC opens up reluctantly. If rude, they clam up or give misleading info. If the player is silent, the NPC might ramble nervously.
+- NPCs **remember earlier interactions.** If the player was dismissive earlier, the NPC will be colder later.
+- Give NPCs **small habits or tics**: the conductor keeps touching his wound, winces, mutters to himself.
+
+## Pacing (节奏控制)
+- **During investigation:** Give the player space. Let them explore. Add ambient details.
+- **When horror approaches:** Tighten sentences. Shorter paragraphs. The monster is a mounting PRESSURE, not just a timer.
+- **Combat:** Quick and brutal. Describe the horror viscerally. One good hit can be lethal — this is COC, not D&D.
+- **Use dice strategically.** Don't call for a roll for every action. If the player describes something reasonable and clever, just let it work. Reserve dice for moments of genuine uncertainty and tension.
+
+## Failure Handling (失败的艺术)
+- A failed roll is NOT a dead end. It's a "yes, BUT" or "no, AND."
+- Failed Investigation: they don't find the clue, but they notice something ELSE (or they find it but make noise doing so).
+- Failed Combat: they miss, but stumble into a better position — or they hit, but the creature barely flinches.
+- **Reward creativity.** If the player comes up with a clever solution, give them a bonus die or lower the difficulty.
+
+## Response Format
+- Keep responses **1-3 paragraphs**, atmospheric.
+- End with a clear situation the player can respond to. Do NOT end with a question every time — sometimes a tense pause or a sound from the darkness is better.
+- Respond in **Chinese** (中文), matching the player's language.
+- Occasionally (not every time), ask for a specific skill check when it creates tension.
+
+## Key COC Principle
+"The oldest and strongest emotion of mankind is fear, and the oldest and strongest kind of fear is fear of the unknown." — H.P. Lovecraft
+
+Keep things slightly vague. Let the player's imagination fill in the gaps. You're not writing a novel — you're building a haunted house the player walks through.`;
+}
+
+async function callAI(userInput) {
+  const s = state.settings;
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.textContent = '思考中...';
+  const thinkingMsg = document.createElement('div');
+  thinkingMsg.className = 'msg kp';
+  thinkingMsg.innerHTML = '<div class="sender">🕯 守秘人</div><div class="loading-dots"><span></span><span></span><span></span></div>';
+  const area = document.getElementById('chat-area');
+  area.appendChild(thinkingMsg);
+  area.scrollTop = area.scrollHeight;
+  try {
+    const response = await fetch(s.apiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+s.apiKey },
+      body: JSON.stringify({ model:s.model, messages:[{role:'system',content:getSystemPrompt()},{role:'user',content:userInput}], temperature:0.85, max_tokens:800 })
+    });
+    thinkingMsg.remove();
+    if (!response.ok) {
+      let errMsg = 'API调用失败';
+      if (response.status===401) errMsg+='：API密钥无效';
+      else if (response.status===404) errMsg+='：端点或模型未找到';
+      else if (response.status===429) errMsg+='：请求频率超限';
+      else errMsg+=` (${response.status})`;
+      addMsg('system', errMsg, 'system');
+      processAction(userInput);
+    } else {
+      const data = await response.json();
+      addMsg('kp', data.choices[0].message.content);
+    }
+  } catch(e) {
+    thinkingMsg.remove();
+    addMsg('system', `连接失败: ${e.message}，回退到内置引擎。`, 'system');
+    processAction(userInput);
+  }
+  btn.disabled = false;
+  btn.textContent = '行动';
+}
+
+/* ========== 骰娘命令解析 ========== */
+function handleDiceCmd(cmd) {
+  // 骰娘式指令: .r 1d100, .ra 侦查, .sc 0/1d6, .en, .ti, .coc
+  const c = state.investigator;
+  if (cmd.startsWith('.r ')) {
+    const formula = cmd.slice(3).trim();
+    const match = formula.match(/(\d*)d(\d+)/i);
+    if (match) { const cnt = parseInt(match[1])||1, sides = parseInt(match[2]); const r = diceRoll(sides,cnt); addMsg('dice',`🎲 ${r.str}`); }
+    else { const d = d100(); addMsg('dice',`🎲 D100=${d}`); }
+    return true;
+  }
+  if (cmd.startsWith('.ra ')) {
+    const skill = cmd.slice(4).trim();
+    if (c && c.skills && c.skills[skill]) { skillRoll(skill); return true; }
+    const val = parseInt(skill); if (!isNaN(val)) { const r = d100(); addMsg('dice',`🎲 检定: D100=${r}/${val} ${r<=val?'✅成功':'❌失败'}`); return true; }
+    addMsg('dice',`🎲 未知技能「${skill}」，输入技能名或数值`);
+    return true;
+  }
+  if (cmd.startsWith('.sc ')) {
+    const p = cmd.slice(4).trim().split('/');
+    if (c) { const r = d100(); const pass = r <= c.san.current; addMsg('dice',`🌀 SAN检定: D100=${r}/${c.san.current} ${pass?'✅成功':'❌失败'}`); }
+    return true;
+  }
+  if (cmd === '.ti') {
+    const tbl = ['失忆','心身残疾(盲/聋/瘫)','暴力倾向','偏执妄想','人际依赖','昏厥','惊慌逃窜','歇斯底里','恐惧症','躁狂症'];
+    const r = Math.floor(Math.random()*10); addMsg('dice',`🌀 疯狂发作: ${r+1}. ${tbl[r]}（持续1D10轮）`);
+    return true;
+  }
+  if (cmd === '.coc') {
+    const s = `STR:${roll3d6x5()} CON:${roll3d6x5()} SIZ:${roll2d6plus6x5()} DEX:${roll3d6x5()} APP:${roll3d6x5()} INT:${roll2d6plus6x5()} POW:${roll3d6x5()} EDU:${roll2d6plus6x5()}`;
+    addMsg('dice',`🎲 COC属性生成: ${s}`);
+    return true;
+  }
+  if (cmd.startsWith('.help')) {
+    addMsg('system','📖 骰娘指令: .r 1d100 掷骰 | .ra 技能名 检定 | .sc 理智检定 | .ti 疯狂症状 | .coc 生成属性 | .en 成长检定', 'system');
+    return true;
+  }
+  return false;
+}
+
+/* ========== 骰娘快捷指令 ========== */
+
+/* ========== 背包UI弹窗 ========== */
+function openBackpack() {
+  const c = state.investigator;
+  if (!c) { showToast('先创建角色吧'); return; }
+  const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'bp-modal';
+  const items = c.inventory||[];
+  const weapons = c.weapons||[];
+  const wepHtml = weapons.map(w => `<div class="bp-slot weapon" style="display:flex;justify-content:space-between;padding:8px"><span>⚔ ${w.name}</span><span style="color:var(--text-muted)">${w.damage||''}</span></div>`).join('');
+  const itemHtml = items.map(i => `<div class="bp-slot" style="padding:8px">📦 ${i}</div>`).join('');
+  overlay.innerHTML = `<div class="modal" style="width:500px;max-height:80vh;overflow-y:auto">
+    <h3>🎒 背包</h3>
+    <div id="wealth-display-modal" class="wealth-display" style="margin-bottom:10px"></div>
+    ${wepHtml ? `<h4 style="color:var(--crimson-light);font-size:12px;margin:4px 0">⚔ 武器</h4>${wepHtml}` : ''}
+    <h4 style="color:var(--text-secondary);font-size:12px;margin:6px 0 4px">📦 物品</h4>
+    ${itemHtml || '<div style="color:var(--text-muted);font-size:12px;padding:12px">空空如也</div>'}
+    <button class="btn-secondary" onclick="document.getElementById('bp-modal').remove()" style="margin-top:10px">关闭</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if(e.target===overlay) overlay.remove(); };
+  // 更新财富
+  const wd = document.getElementById('wealth-display-modal');
+  if (c.credit !== undefined) wd.innerHTML = `<span class="coin">💰 ¥${(c.credit||0)*200}</span> 现金 · <span class="coin">¥${(c.credit||0)*1000}</span> 资产`;
+  else wd.style.display = 'none';
+}
+
+/* ========== 角色卡弹窗 ========== */
+function openCharView() {
+  const c = state.investigator;
+  if (!c) { showToast('先创建角色吧'); return; }
+  const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'char-view-modal';
+  const attrs = c.attrs;
+  const attrHtml = Object.entries(attrs).map(([k,v]) => {
+    const t = getTier(v);
+    return `<div class="attr-box"><div class="an">${ATTR_SHORT[k]}<br><span style="font-size:8px;color:var(--text-muted)">${k.toUpperCase()}</span></div><div class="av">${v}</div><span class="attr-tier ${t.cls}">${t.label}</span></div>`;
+  }).join('');
+  const skillHtml = c.skills ? Object.entries(c.skills).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="stat-row"><span class="label">${k}</span><span class="value">${v}%</span></div>`).join('') : '';
+  overlay.innerHTML = `<div class="modal" style="width:580px;max-height:90vh;overflow-y:auto">
+    <h3>📋 ${c.name} ${c.occ?'('+c.occ+')':''}</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text-muted)">HP: ${c.hp.current}/${c.hp.max} | SAN: ${c.san.current}/${c.san.max} | LUCK: ${c.luck.current}</div>
+      <div style="font-size:11px;color:var(--text-muted)">DB: ${c.db} | MOV: ${c.mov||8} | ${c.age||'?'}岁 | ${c.gender||'?'}</div>
+    </div>
+    <h4 style="font-size:12px;color:var(--eldritch-teal);margin-bottom:6px">🎲 属性</h4>
+    <div class="attr-mini" style="grid-template-columns:1fr 1fr 1fr 1fr">${attrHtml}</div>
+    <h4 style="font-size:12px;color:var(--eldritch-teal);margin:10px 0 6px">⭐ 技能</h4>
+    <div id="skills-list" style="max-height:200px;overflow-y:auto">${skillHtml||'<div style="color:var(--text-muted)">无</div>'}</div>
+    <div style="margin-top:10px;padding:8px;background:var(--bg-tertiary);border-radius:var(--radius);font-size:11px;color:var(--text-muted)">
+      ${c.bg||'无背景故事'}
+    </div>
+    <button class="btn-secondary" onclick="document.getElementById('char-view-modal').remove()" style="margin-top:10px">关闭</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if(e.target===overlay) overlay.remove(); };
+}
+
+/* ========== NPC系统 ========== */
+function registerNPC(id, name, data) {
+  if (state.npcs.find(n => n.id === id)) return;  // 已存在不重复添加
+  const npc = { id, name, age:'?', gender:'?', appearance:'待观察', notes:'', info:[], firstSeen:state.sceneData.currentCar, relation:'neutral', ...data };
+  state.npcs.push(npc);
+  renderNPCList();
+  autoSave();
+  // 弹提示
+  showToast(`📇 新NPC: ${npc.name}`);
+  return npc;
+}
+
+function updateNPCInfo(id, key, value) {
+  const npc = state.npcs.find(n => n.id === id);
+  if (!npc) return;
+  if (key === 'info') npc.info = [...new Set([...npc.info, value])];  // 去重添加
+  else npc[key] = value;
+  renderNPCList();
+  autoSave();
+}
+
+function openNPCCard(npcId) {
+  const npc = state.npcs.find(n => n.id === npcId);
+  if (!npc) return;
+  const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'npc-card-modal';
+  const infoHtml = npc.info.map(i => `<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);color:var(--eldritch-green)">📌 ${i}</div>`).join('');
+  overlay.innerHTML = `<div class="modal" style="width:420px;max-height:80vh;overflow-y:auto">
+    <h3>📇 ${npc.name}</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;font-size:12px">
+      <div><span style="color:var(--text-muted)">年龄:</span> ${npc.age}</div>
+      <div><span style="color:var(--text-muted)">性别:</span> ${npc.gender}</div>
+      <div><span style="color:var(--text-muted)">关系:</span> <span style="color:${npc.relation==='friendly'?'var(--green-light)':npc.relation==='hostile'?'var(--crimson-light)':'var(--text-muted)'}">${npc.relation==='friendly'?'友好':npc.relation==='hostile'?'敌对':'中立'}</span></div>
+      <div><span style="color:var(--text-muted)">首次出现:</span> 车厢#${npc.firstSeen}</div>
+    </div>
+    <h4 style="font-size:11px;color:var(--eldritch-teal);margin-bottom:4px">样貌特征</h4>
+    <div style="font-size:12px;color:var(--text-secondary);padding:6px 8px;background:var(--bg-tertiary);border-radius:var(--radius);margin-bottom:8px">${npc.appearance}</div>
+    <h4 style="font-size:11px;color:var(--eldritch-teal);margin-bottom:4px">获取的情报</h4>
+    ${infoHtml || '<div style="font-size:11px;color:var(--text-muted);padding:8px">尚未获取到信息</div>'}
+    <button class="btn-secondary" onclick="document.getElementById('npc-card-modal').remove()" style="margin-top:10px">关闭</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if(e.target===overlay) overlay.remove(); };
+}
+
+function renderNPCList() {
+  const el = document.getElementById('npc-list');
+  if (state.npcs.length === 0) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:12px">探索中会遇到角色…</div>';
+    return;
+  }
+  el.innerHTML = state.npcs.map(n => {
+    const color = n.relation==='friendly'?'var(--green-light)':n.relation==='hostile'?'var(--crimson-light)':'var(--text-muted)';
+    return `<div class="npc-item" onclick="openNPCCard('${n.id}')" style="cursor:pointer">
+      <span class="npc-name">${n.name}</span>
+      <span class="npc-rel" style="color:${color};font-size:10px">${n.relation==='friendly'?'友好':n.relation==='hostile'?'敌对':'中立'}${n.info.length?' ('+n.info.length+')':''}</span>
+    </div>`;
+  }).join('');
+}
+
+// ==================== SAVE ====================
+function saveGame() {
+  autoSave();
+  showToast('游戏已保存 💾');
+}
+function autoSave() {
+  localStorage.setItem('coc-kp-state', JSON.stringify(state));
+}
+function resetGame() {
+  if (!confirm('⚠️ 确认重置？所有游戏进度和角色数据将被清除。')) return;
+  localStorage.removeItem('coc-kp-state');
+  state = {
+    investigator: null, gamePhase: 'idle', clues: [], npcs: [],
+    tutorialStep: 0, tutorialDone: false,
+    sceneData: { currentCar:1, conductorAwake:false, hasKey:false, hasCrowbar:false, hasFlashlight:false, warningsTriggered:[], monsterDistance:8, plotLock:['conductor_helper','key_location','finale_brake'], plotEvents:[] },
+    settings: state.settings
+  };
+  goHome();
+  autoSave();
+  showToast('🔄 已重置，可以开始新冒险');
+}
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  document.getElementById('user-input').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+  });
+});
+</script>
+
+<!-- 免责声明 -->
+<div style="text-align:center;padding:8px 12px;font-size:9px;color:var(--text-muted);line-height:1.6;border-top:1px solid var(--border);background:var(--bg-primary);width:100%;box-sizing:border-box">
+本工具为爱好者个人制作，<b>非混沌元素(Chaosium)官方产品</b>。<br>
+COC 7th Edition 规则版权归 Chaosium Inc. 所有。「常暗之厢」模组版权归原作者所有。<br>
+仅供个人学习与娱乐使用，免费公开，不涉及任何商业用途。
+</div>
+
+</body>
+</html>
