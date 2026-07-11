@@ -531,7 +531,9 @@ body {
 .ipc-meta { font-size: 11px; color: var(--text-muted); }
 .ipc-stats { font-size: 11px; color: var(--eldritch-teal); margin-top: 4px; }
 .ipc-icon { font-size: 28px; color: var(--text-muted); }
-.session-card { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; }
+.session-card { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; position: relative; }
+.sess-card .ipc-del, .session-card .ipc-del { position: absolute; top: 6px; right: 6px; opacity: 0.5; }
+.session-card:hover .ipc-del { opacity: 1; }
 .sess-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .sess-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .sess-time { font-size: 10px; color: var(--text-muted); }
@@ -543,6 +545,17 @@ body {
 .play-header { display: flex; gap: 12px; align-items: center; padding: 8px 16px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
 .play-title { font-size: 13px; color: var(--eldritch-teal); font-weight: 600; }
 .home-btn { background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-secondary); padding: 4px 10px; border-radius: var(--radius); cursor: pointer; font-size: 11px; }
+.inv-pick-card { position: relative; }
+.ipc-del { position: absolute; top: 4px; right: 4px; background: transparent; border: none; color: var(--text-muted); width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.15s; }
+.inv-pick-card:hover .ipc-del { opacity: 1; }
+.ipc-del:hover { background: var(--crimson); color: #fff; }
+.inv-create-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.ipc-create-card { background: var(--bg-tertiary); border: 1px dashed var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all 0.2s; text-align: center; }
+.ipc-create-card:hover { border-color: var(--eldritch-teal); border-style: solid; background: var(--bg-secondary); }
+.ipc-create-card.quick:hover { border-color: var(--eldritch-green); }
+.ipc-create-card.detailed:hover { border-color: var(--crimson-light); }
+.ipc-create-card .ipc-icon { font-size: 24px; margin-bottom: 4px; }
+.ipc-create-card .ipc-desc { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -966,19 +979,44 @@ function showInvestigatorSelect(scenarioId) {
       <div class="inv-grid">
         ${list.map(inv => `
           <div class="inv-pick-card" onclick="${scenarioId ? `confirmPickInv('${inv.id}')` : `editInv('${inv.id}')`}">
+            <button class="ipc-del" onclick="event.stopPropagation();deleteInv('${inv.id}')" title="删除调查员">×</button>
             <div class="ipc-name">${inv.name}</div>
             <div class="ipc-meta">${inv.occ||'-'} · ${inv.age||'?'}岁</div>
             <div class="ipc-stats">HP${inv.hp.max} SAN${inv.san.max} DEX${inv.attrs.dex}</div>
           </div>
         `).join('')}
-        <div class="inv-pick-card add" onclick="openCharCreate()">
-          <div class="ipc-icon">+</div>
-          <div class="ipc-name">新建调查员</div>
-        </div>
+      </div>
+      <div class="inv-create-bar">
+        <button class="ipc-create-card quick" onclick="openQuickCreate()">
+          <div class="ipc-icon">⚡</div>
+          <div class="ipc-name">智能建卡</div>
+          <div class="ipc-desc">填几个基础信息自动生成</div>
+        </button>
+        <button class="ipc-create-card detailed" onclick="openCharCreate()">
+          <div class="ipc-icon">🎭</div>
+          <div class="ipc-name">详细建卡</div>
+          <div class="ipc-desc">5标签完整自定义</div>
+        </button>
       </div>
       ${scenarioId ? '<button class="btn-secondary" onclick="showScenarioSelect()" style="margin-top:10px">← 返回台本选择</button>' : ''}
     </div>
   `;
+}
+
+function deleteInv(invId) {
+  if (!confirm('确定删除这个调查员？相关对话也会被清理。')) return;
+  state.investigators = state.investigators.filter(i => i.id !== invId);
+  // 清理该调查员相关的所有对话
+  state.sessions = state.sessions.filter(s => s.investigatorId !== invId);
+  if (state.investigator && state.investigator.id === invId) {
+    state.investigator = null;
+    state.currentSessionId = null;
+  }
+  autoSave();
+  showToast('🗑 已删除');
+  // 重新渲染当前页面
+  if (state.currentScenarioId) showInvestigatorSelect(state.currentScenarioId);
+  else showInvestigatorSelect();
 }
 
 function confirmPickInv(invId) {
@@ -1025,6 +1063,7 @@ function showSessionList() {
         const preview = lastMsg ? (lastMsg.content||'').slice(0,60) : '（空）';
         return `
           <div class="session-card">
+            <button class="ipc-del sess-del" onclick="deleteSession('${s.id}')" title="删除对话">×</button>
             <div class="sess-head">
               <span class="sess-title">${s.name||'未命名'}</span>
               <span class="sess-time">${new Date(s.lastPlayed).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'})}</span>
