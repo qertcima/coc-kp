@@ -1631,6 +1631,7 @@ function openQuickCreate() {
     <div class="modal" style="width:520px">
       <h3>⚡ 智能建卡</h3>
       <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">填几个基本信息，系统自动生成完整角色卡</p>
+      <p style="font-size:10px;color:var(--eldritch-teal);margin-top:-6px;margin-bottom:10px;opacity:0.8">💡 留空不填 → 一键召唤预设角色「黎麦」（在日中国留学生·短棍格斗）</p>
       <div class="char-form" style="display:flex;flex-direction:column;gap:8px">
         <div class="row"><div style="flex:2"><label style="font-size:10px;color:var(--text-muted)">角色名</label><input id="qc-name" placeholder="如：黎麦"></div>
         <div style="flex:1"><label style="font-size:10px;color:var(--text-muted)">年龄</label><input id="qc-age" placeholder="如：19" type="number"></div>
@@ -1662,6 +1663,19 @@ function quickGenerateChar() {
   const appearance = document.getElementById('qc-appearance').value.trim();
   const bg = document.getElementById('qc-background').value.trim();
   const gearStr = document.getElementById('qc-gear').value.trim();
+
+  // 留空快捷通道：所有字段全空时直接召唤黎麦预设
+  const rawName = document.getElementById('qc-name').value.trim();
+  const rawAge = document.getElementById('qc-age').value.trim();
+  const isAllEmpty = !rawName && !rawAge && !appearance && !bg && !gearStr;
+  if (isAllEmpty) {
+    // 关闭弹窗
+    const modal = document.getElementById('quick-char-modal');
+    if (modal) modal.remove();
+    showToast('⚡ 检测到留空，正在召唤「黎麦」...');
+    setTimeout(() => createLimaiChar(), 200);
+    return;
+  }
 
   // 根据描述的关键词解析特征
   const lower = (bg + ' ' + appearance).toLowerCase();
