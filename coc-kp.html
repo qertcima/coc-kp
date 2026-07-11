@@ -987,7 +987,7 @@ function renderTutorialContent(step) {
 ｜<b>≤技能值的1/2</b>｜⭐ 困难成功 (Hard)｜高于普通水准｜
 ｜<b>≤技能值</b>｜✅ 常规成功 (Regular)｜正常完成目标｜
 ｜<b>>技能值</b>｜❌ 失败 (Fail)｜未达成目标，但可再接再厉｜
-｜<b>96-00</b><br>(技能<50时96-00)｜💀 大失败 (Fumble)｜糟糕！事情变得更糟了｜
+｜<b>96-00</b><br>(技能&lt;50时96-00)｜💀 大失败 (Fumble)｜糟糕！事情变得更糟了｜
 
 <b>【示例】你的「侦查」是60%】</b>
 - 投出 <b>01</b> → 🔥 大成功！你发现了暗格中的秘密日记，还找到了双层底下的证据
@@ -2051,6 +2051,21 @@ function qAction(action) {
 // ==================== COMBAT/DICE HELPERS ====================
 function d100() { return Math.floor(Math.random() * 100) + 1; }
 
+// 解析骰子公式，例如 "1D6"、"2D3"、"5"
+function parseDiceFormula(formula) {
+  if (!formula) return 0;
+  formula = String(formula).trim().toUpperCase().replace(/\s/g, '');
+  // 纯数字
+  if (/^\d+$/.test(formula)) return parseInt(formula);
+  // nDs 格式
+  const m = formula.match(/^(\d*)D(\d+)$/);
+  if (m) {
+    const n = parseInt(m[1]) || 1, s = parseInt(m[2]);
+    return diceRoll(s, n).total;
+  }
+  return 0;
+}
+
 function diceRoll(sides, count) {
   count = count || 1;
   let total = 0;
@@ -2128,9 +2143,10 @@ function openDice() {
 }
 
 function simpleRoll(name, sides) {
+  if (name === 'SAN检定' || sides === 0) { sanCheck(1); return; }
   if (sides === '%') { d100Roll('d100'); return; }
   if (sides === '🌀') { sanCheck(1); return; }
-  const r = diceRoll(typeof sides === 'number' ? sides : 100);
+  const r = diceRoll(typeof sides === 'number' && sides > 0 ? sides : 100);
   addMsg('dice', `${name}: ${r.str}`);
 }
 
@@ -2241,12 +2257,13 @@ function processAction(text) {
     if (lower.includes('侦查') || lower.includes('搜索')) {
       const res = skillRoll('侦查');
       if (res.level === 'success' || res.level === 'hard' || res.level === 'extreme' || res.level === 'crit') {
-        addMsg('kp', `你在座位夹缝里发现了一个小巧的**手电筒**。试了试，还能亮。这在这片漆黑中会很有用。\n\n获得物品：手电筒`);
+        addMsg('kp', `你在座位夹缝里发现了一个小巧的<b>手电筒</b>。试了试，还能亮。这在这片漆黑中会很有用。\n\n获得物品：手电筒`);
         sd.hasFlashlight = true;
         c.inventory.push('手电筒');
         updateCharSheet();
       } else if (res.level === 'fumble') {
-        addMsg('kp', `你不小心被一张翘起的地毯绊了一下，膝盖撞到了座椅上。——1点伤害。\n\nHP -1（当前${c.hp.current-1}/${c.hp.max}）`);
+        const newHp = Math.max(0, c.hp.current - 1);
+        addMsg('kp', `你不小心被一张翘起的地毯绊了一下，膝盖撞到了座椅上。——1点伤害。\n\nHP -1（当前${newHp}/${c.hp.max}）`);
         c.hp.current = Math.max(0, c.hp.current - 1);
         updateCharSheet();
       } else {
@@ -2272,7 +2289,7 @@ function processAction(text) {
     if (lower.includes('钥匙') || lower.includes('箱') || lower.includes('找') || lower.includes('搜索') || lower.includes('侦查')) {
       const res = skillRoll('侦查');
       if (res.level === 'success' || res.level === 'hard' || res.level === 'extreme' || res.level === 'crit') {
-        addMsg('kp', `你在3号车厢的行李架角落找到了一个用布包裹的小盒子。打开一看——里面是一把**陈旧的黄铜钥匙**。钥匙上刻着一行小字：「车长室」。\n\n获得物品：黄铜钥匙`);
+        addMsg('kp', `你在3号车厢的行李架角落找到了一个用布包裹的小盒子。打开一看——里面是一把<b>陈旧的黄铜钥匙</b>。钥匙上刻着一行小字：「车长室」。\n\n获得物品：黄铜钥匙`);
         sd.hasKey = true;
         c.inventory.push('黄铜钥匙');
         updateCharSheet();
@@ -2294,7 +2311,7 @@ function processAction(text) {
   // --- CAR 4 - Conductors Car ---
   if (sd.currentCar === 4) {
     if ((lower.includes('钥匙') || lower.includes('开') || lower.includes('门')) && sd.hasKey) {
-      addMsg('kp', `你用黄铜钥匙打开了通往4号车厢的门。门锁咔哒一声弹开。\n\n4号车厢是一节乘务员车厢。这里堆放着一些工具和杂物。一个穿着制服的**乘务员**蜷缩在角落里，听到声音猛地抬起头来。\n\n"你...你是活人？"他声音颤抖。他的腿上有一道触目惊心的伤口，被用撕碎的衬衫布条草草包扎着。`);
+      addMsg('kp', `你用黄铜钥匙打开了通往4号车厢的门。门锁咔哒一声弹开。\n\n4号车厢是一节乘务员车厢。这里堆放着一些工具和杂物。一个穿着制服的<b>乘务员</b>蜷缩在角落里，听到声音猛地抬起头来。\n\n"你...你是活人？"他声音颤抖。他的腿上有一道触目惊心的伤口，被用撕碎的衬衫布条草草包扎着。`);
       sd.conductorAwake = true;
       sd.currentCar = 4;
       registerNPC('conductor', '乘务员·京山人吉', {
@@ -2315,7 +2332,7 @@ function processAction(text) {
       if (lower.includes('治疗') || lower.includes('急救') || lower.includes('包扎')) {
         const res = skillRoll('急救');
         if (res.level === 'success' || res.level === 'hard' || res.level === 'extreme' || res.level === 'crit') {
-          addMsg('kp', `你帮乘务员重新处理了伤口。他感激地看着你："谢谢...前面5号车厢的工具箱里应该有**撬棍**，你拿去吧，也许用得上。"\n\n乘务员好感度提升。获得情报：5号车厢有撬棍。`);
+          addMsg('kp', `你帮乘务员重新处理了伤口。他感激地看着你："谢谢...前面5号车厢的工具箱里应该有<b>撬棍</b>，你拿去吧，也许用得上。"\n\n乘务员好感度提升。获得情报：5号车厢有撬棍。`);
           addMsg('tip', '乘务员说你是个好人。他提到5号车厢有撬棍。', '情报');
           sd.hasCrowbar = true;
         } else {
@@ -2348,7 +2365,7 @@ function processAction(text) {
       return;
     }
     if (lower.includes('工具箱') || lower.includes('工具') || lower.includes('搜') || lower.includes('找')) {
-      addMsg('kp', `你在杂物中找到了一根生锈的**撬棍**。虽然沉了点，但用来撬门或者防身应该没问题。\n\n获得物品：撬棍`);
+      addMsg('kp', `你在杂物中找到了一根生锈的<b>撬棍</b>。虽然沉了点，但用来撬门或者防身应该没问题。\n\n获得物品：撬棍`);
       sd.hasCrowbar = true;
       if (!c.inventory.includes('撬棍')) c.inventory.push('撬棍');
       updateCharSheet();
@@ -2732,7 +2749,26 @@ function handleDiceCmd(cmd) {
   }
   if (cmd.startsWith('.sc ')) {
     const p = cmd.slice(4).trim().split('/');
-    if (c) { const r = d100(); const pass = r <= c.san.current; addMsg('dice',`🌀 SAN检定: D100=${r}/${c.san.current} ${pass?'✅成功':'❌失败'}`); }
+    if (c) {
+      const r = d100();
+      const pass = r <= c.san.current;
+      // 解析损失: 成功/失败, 每个有 nDs 格式
+      const successLoss = p[0] || (pass ? '1' : '0');
+      const failLoss = p[1] || (pass ? '1' : '1');
+      const lossStr = pass ? successLoss : failLoss;
+      const loss = parseDiceFormula(lossStr);
+      if (loss > 0) c.san.current = Math.max(0, c.san.current - loss);
+      addMsg('dice', `🌀 SAN检定: D100=${r}/${c.san.current} ${pass?'✅成功':'❌失败'} (${pass?'-':'-'}${loss} SAN)`);
+      if (loss >= 5) addMsg('tip', '⚠️ 单次损失≥5 SAN → 进入临时疯狂状态！', '理智警告');
+      updateCharSheet();
+    }
+    return true;
+  }
+  if (cmd === '.en') {
+    if (c) {
+      const r = d100();
+      addMsg('dice', `📈 技能成长检定: D100=${r} ${r<=1?'🔥大成功(技能+1D6)':r<=5?'💫成功(技能+1)':r>=96?'💀失败(技能-1D6)':'⏸无变化'}`);
+    } else { addMsg('dice','📈 技能成长检定: 请先创建角色'); }
     return true;
   }
   if (cmd === '.ti') {
