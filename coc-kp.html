@@ -1968,22 +1968,29 @@ function updateCharSheet() {
 }
 
 // ==================== CHAT ====================
+// 工具：把纯文本里的 \n 转换成 <br>，让多行文字保持可读
+function nl2br(text) {
+  if (typeof text !== 'string') return text;
+  return text.replace(/\n/g, '<br>');
+}
+
 function addMsg(type, content, subtype) {
   const msgContainer = document.getElementById('chat-messages');
   const area = document.getElementById('chat-area');
+  const body = nl2br(content);
   let html = '';
   if (type === 'kp') {
-    html = `<div class="msg kp"><div class="sender">🕯 守秘人</div>${content}</div>`;
+    html = `<div class="msg kp"><div class="sender">🕯 守秘人</div>${body}</div>`;
   } else if (type === 'player') {
-    html = `<div class="msg player">${content}</div>`;
+    html = `<div class="msg player">${body}</div>`;
   } else if (type === 'dice') {
-    html = `<div class="msg dice">🎲 ${content}</div>`;
+    html = `<div class="msg dice">🎲 ${body}</div>`;
   } else if (type === 'tip') {
-    html = `<div class="msg tip"><div class="tip-label">💡 ${subtype||'小贴士'}</div>${content}</div>`;
+    html = `<div class="msg tip"><div class="tip-label">💡 ${subtype||'小贴士'}</div>${body}</div>`;
   } else if (type === 'rule') {
-    html = content;
+    html = body;
   } else {
-    html = `<div class="msg system">${content}</div>`;
+    html = `<div class="msg system">${body}</div>`;
   }
   msgContainer.innerHTML += html;
   area.scrollTop = area.scrollHeight;
@@ -2160,11 +2167,11 @@ function startScenario() {
   if (state.gamePhase === 'playing') return;  // 幂等保护
   state.gamePhase = 'playing';
   state.sceneData.currentCar = 1;
-  addMsg('system', '========== 常暗之厢 ==========', 'system');
-  addMsg('kp', `<i>2013年，某个普通的夜晚。你加班到很晚，拖着疲惫的身躯赶上了今天的末班电车。车厢里稀稀落落坐了几个乘客，你找了个座位坐下，眼皮越来越沉，不知不觉陷入了沉睡...</i>`);
+  addMsg('system', '========== 常暗之厢 ==========');
+  addMsg('kp', `<i>2013年，某个普通的夜晚。你加班到很晚，拖着疲惫的身躯赶上了今天的末班电车。车厢里稀稀落落坐了几个乘客，你找了个座位坐下，眼皮越来越沉，不知不觉陷入了沉睡……</i>`);
   addMsg('kp', `<i>不知过了多久，你猛然惊醒。</i>`);
   addMsg('kp', `车厢里空无一人。所有的乘客都消失了，只剩下你自己。窗外不是熟悉的街灯，而是一片浓稠的黑暗。电车仍在飞驰——但你清楚地意识到，按时间计算，早就该到终点站了。`);
-  addMsg('kp', `你看向车厢门，上面贴着一张便签：</i>「只管前进吧，已经没有退路了」</i>`);
+  addMsg('kp', `你看向车厢门，上面贴着一张便签：「<b>只管前进吧，已经没有退路了</b>」`);
   addMsg('kp', `你的手机没有信号。你检查了一下身上的东西——还好，大部分物品还在。你站在空荡荡的车厢里，前方是未知的黑暗。\n\n<b>你要怎么做？</b>`);
   addMsg('tip', '你可以：①检查便签背面 ②搜索你所在的车厢 ③前往下一节车厢 ④检查自己的物品', '操作提示');
   advanceTutorial();
